@@ -1,14 +1,11 @@
 package com.leclowndu93150.corpsecurioscompat.mixin;
 
-import de.maxhenkel.corpse.corelib.inventory.ItemListInventory;
 import de.maxhenkel.corpse.entities.CorpseEntity;
-import de.maxhenkel.corpse.gui.CorpseAdditionalContainer;
+import de.maxhenkel.corpse.gui.CorpseInventoryContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.items.wrapper.PlayerMainInvWrapper;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -19,8 +16,8 @@ import top.theillusivec4.curios.api.type.inventory.ICurioStacksHandler;
 import java.util.Map;
 import java.util.Optional;
 
-@Mixin(CorpseAdditionalContainer.class)
-public abstract class CorpseAdditionalContainerMixin {
+@Mixin(CorpseInventoryContainer.class)
+public abstract class CorpseInventoryContainerMixin {
 
     private Player cachedPlayer;
 
@@ -29,17 +26,16 @@ public abstract class CorpseAdditionalContainerMixin {
         this.cachedPlayer = playerInventory.player;
     }
 
-    @Inject(method = "transferItems", at = @At("HEAD"))
+    @Inject(method = "transferItems", at = @At("TAIL"))
     private void transferItemsToCurios(CallbackInfo ci) {
-        CorpseAdditionalContainer container = (CorpseAdditionalContainer) (Object) this;
-
+        CorpseInventoryContainer container = (CorpseInventoryContainer) (Object) this;
         Optional<ICuriosItemHandler> curiosOpt = CuriosApi.getCuriosHelper().getCuriosHandler(this.cachedPlayer);
 
         if (curiosOpt.isPresent()) {
             ICuriosItemHandler curiosHandler = curiosOpt.get();
 
-            for (int i = 0; i < container.getItems().size(); i++) {
-                ItemStack stack = container.getSlot(i).getItem();
+            for (int i = 0; i < this.cachedPlayer.getInventory().getContainerSize(); i++) {
+                ItemStack stack = this.cachedPlayer.getInventory().getItem(i);
 
                 if (!stack.isEmpty()) {
                     boolean itemTransferred = false;
@@ -53,8 +49,9 @@ public abstract class CorpseAdditionalContainerMixin {
                                 ItemStack currentSlotItem = handler.getStacks().getStackInSlot(slot);
 
                                 if (currentSlotItem.isEmpty()) {
+                                    System.out.println("Transfering item to curio slot from player inventory");
                                     handler.getStacks().setStackInSlot(slot, stack.copy());
-                                    container.setItem(i, 1, ItemStack.EMPTY);
+                                    this.cachedPlayer.getInventory().setItem(i, ItemStack.EMPTY); // Remove the item from the player's inventory
                                     itemTransferred = true;
                                     break;
                                 }
