@@ -49,9 +49,8 @@ public abstract class CorpseInventoryContainerMixin {
                                 ItemStack currentSlotItem = handler.getStacks().getStackInSlot(slot);
 
                                 if (currentSlotItem.isEmpty()) {
-                                    System.out.println("Transfering item to curio slot from player inventory");
                                     handler.getStacks().setStackInSlot(slot, stack.copy());
-                                    this.cachedPlayer.getInventory().setItem(i, ItemStack.EMPTY); // Remove the item from the player's inventory
+                                    this.cachedPlayer.getInventory().setItem(i, ItemStack.EMPTY);
                                     itemTransferred = true;
                                     break;
                                 }
