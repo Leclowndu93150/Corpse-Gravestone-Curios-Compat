@@ -19,18 +19,7 @@ public class Main
     private static final Logger LOGGER = LogUtils.getLogger();
 
     public Main(IEventBus modEventBus, ModContainer modContainer) {
-        NeoForge.EVENT_BUS.register(new Balls());
+        LOGGER.info("Hello from Corpse Curios Compat!");
     }
 
-    public class Balls {
-
-        public Balls() {
-            de.maxhenkel.corpse.corelib.death.DeathEvents.register();
-        }
-
-        @SubscribeEvent
-        public void onDeath(PlayerDeathEvent event) {
-            LOGGER.info(String.valueOf(event.getDeath().getAdditionalItems()));
-        }
-    }
 }
