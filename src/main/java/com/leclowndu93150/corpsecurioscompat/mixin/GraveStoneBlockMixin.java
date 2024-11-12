@@ -1,14 +1,14 @@
 package com.leclowndu93150.corpsecurioscompat.mixin;
 
-import de.maxhenkel.corpse.entities.CorpseEntity;
-import de.maxhenkel.corpse.gui.CorpseInventoryContainer;
-import net.minecraft.world.entity.player.Inventory;
+import de.maxhenkel.gravestone.blocks.GraveStoneBlock;
+import de.maxhenkel.gravestone.corelib.death.Death;
+import net.minecraft.core.NonNullList;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import top.theillusivec4.curios.api.CuriosApi;
 import top.theillusivec4.curios.api.type.capability.ICuriosItemHandler;
 import top.theillusivec4.curios.api.type.inventory.ICurioStacksHandler;
@@ -16,26 +16,24 @@ import top.theillusivec4.curios.api.type.inventory.ICurioStacksHandler;
 import java.util.Map;
 import java.util.Optional;
 
-@Mixin(CorpseInventoryContainer.class)
-public abstract class CorpseInventoryContainerMixin {
+@Mixin(GraveStoneBlock.class)
+public class GraveStoneBlockMixin {
 
-    private Player cachedPlayer;
-
-    @Inject(method = "<init>", at = @At("TAIL"))
-    private void onInit(int id, Inventory playerInventory, CorpseEntity corpse, boolean editable, boolean history, CallbackInfo ci) {
-        this.cachedPlayer = playerInventory.player;
-    }
-
-    @Inject(method = "transferItems", at = @At("TAIL"))
-    private void transferItemsToCurios(CallbackInfo ci) {
-        CorpseInventoryContainer container = (CorpseInventoryContainer) (Object) this;
-        Optional<ICuriosItemHandler> curiosOpt = CuriosApi.getCuriosHelper().getCuriosHandler(this.cachedPlayer);
+    @Inject(
+            method = "fillPlayerInventory",
+            at = @At("RETURN"),
+            cancellable = true,
+            remap = false
+    )
+    private void handleCuriosItems(Player player, Death death, CallbackInfoReturnable<NonNullList<ItemStack>> cir) {
+        NonNullList<ItemStack> additionalItems = cir.getReturnValue();
+        Optional<ICuriosItemHandler> curiosOpt = CuriosApi.getCuriosHelper().getCuriosHandler(player);
 
         if (curiosOpt.isPresent()) {
             ICuriosItemHandler curiosHandler = curiosOpt.get();
 
-            for (int i = 0; i < this.cachedPlayer.getInventory().getContainerSize(); i++) {
-                ItemStack stack = this.cachedPlayer.getInventory().getItem(i);
+            for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+                ItemStack stack = player.getInventory().getItem(i);
 
                 if (!stack.isEmpty()) {
                     boolean itemTransferred = false;
@@ -50,7 +48,7 @@ public abstract class CorpseInventoryContainerMixin {
 
                                 if (currentSlotItem.isEmpty()) {
                                     handler.getStacks().setStackInSlot(slot, stack.copy());
-                                    this.cachedPlayer.getInventory().setItem(i, ItemStack.EMPTY);
+                                    player.getInventory().setItem(i, ItemStack.EMPTY);
                                     itemTransferred = true;
                                     break;
                                 }
@@ -63,5 +61,6 @@ public abstract class CorpseInventoryContainerMixin {
                 }
             }
         }
+        cir.setReturnValue(additionalItems);
     }
 }

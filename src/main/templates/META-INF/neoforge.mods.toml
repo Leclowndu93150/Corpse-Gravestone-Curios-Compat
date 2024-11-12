@@ -87,10 +87,10 @@ description='''${mod_description}'''
 
 # Here's another dependency
 [[dependencies.${mod_id}]]
-modId="corpse"
+modId="gravestone"
 type="required"
 # This version range declares a minimum of the current minecraft version up to but not including the next major version
-versionRange="[1.1.2,)"
+versionRange="[1.0.24,)"
 ordering="NONE"
 side="BOTH"
 

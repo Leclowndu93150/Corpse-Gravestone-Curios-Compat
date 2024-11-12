@@ -3,8 +3,7 @@
   "package": "com.leclowndu93150.corpsecurioscompat.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
-    "CorpseAdditionalContainerMixin",
-    "CorpseInventoryContainerMixin"
+    "GraveStoneBlockMixin"
   ],
   "injectors": {
     "defaultRequire": 1
