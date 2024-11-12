@@ -5,8 +5,7 @@
   "compatibilityLevel": "JAVA_8",
   "refmap": "corpsecurioscompat.refmap.json",
   "mixins": [
-    "CorpseAdditionalContainerMixin",
-    "CorpseInventoryContainerMixin"
+    "GraveStoneBlockMixin"
   ],
   "client": [
   ],

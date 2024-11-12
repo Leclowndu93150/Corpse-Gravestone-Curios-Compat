@@ -7,11 +7,11 @@ import org.slf4j.Logger;
 @Mod(Main.MODID)
 public class Main {
 
-    public static final String MODID = "corpsecurioscompat";
+    public static final String MODID = "gravestonecurioscompat";
     private static final Logger LOGGER = LogUtils.getLogger();
 
     public Main() {
-       LOGGER.info("Hello from Corpse Curios Compat!");
+       LOGGER.info("Hello from Gravestone Curios Compat!");
     }
 
 }
