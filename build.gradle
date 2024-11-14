@@ -144,8 +144,12 @@ dependencies {
     // then special handling is done to allow a setup of a vanilla dependency without the use of an external repository.
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 
-    implementation fg.deobf("curse.maven:gravestone-mod-238551:5794077")
-    implementation fg.deobf("curse.maven:curios-309927:5843737")
+    implementation fg.deobf("curse.maven:gravestone-mod-238551:3713957")
+    implementation fg.deobf("curse.maven:curios-309927:4985315")
+
+    // for testing
+//    runtimeOnly fg.deobf("curse.maven:artifacts-312353:5577758")
+//    runtimeOnly fg.deobf("curse.maven:expandability-465066:3678612")
 
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 
