@@ -38,7 +38,7 @@ public abstract class CorpseAdditionalContainerMixin {
             for (int i = 0; i < container.getItems().size(); i++) {
                 ItemStack stack = container.getSlot(i).getItem();
 
-                if (!stack.isEmpty()) {
+                if (!stack.isEmpty() && !CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).isEmpty()) {
                     boolean itemTransferred = false;
 
                     for (Map.Entry<String, ICurioStacksHandler> entry : curiosHandler.getCurios().entrySet()) {
