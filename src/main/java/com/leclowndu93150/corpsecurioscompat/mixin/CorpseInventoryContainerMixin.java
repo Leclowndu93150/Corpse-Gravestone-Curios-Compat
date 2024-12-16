@@ -16,7 +16,7 @@ import top.theillusivec4.curios.api.type.inventory.ICurioStacksHandler;
 import java.util.Map;
 import java.util.Optional;
 
-@Mixin(CorpseInventoryContainer.class)
+@Mixin(value = CorpseInventoryContainer.class, remap = false)
 public abstract class CorpseInventoryContainerMixin {
 
     private Player cachedPlayer;
