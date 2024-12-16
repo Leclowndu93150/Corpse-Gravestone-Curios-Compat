@@ -16,49 +16,78 @@ import top.theillusivec4.curios.api.type.inventory.ICurioStacksHandler;
 import java.util.Map;
 import java.util.Optional;
 
-@Mixin(CorpseInventoryContainer.class)
+@Mixin(value = CorpseInventoryContainer.class, remap = false)
 public abstract class CorpseInventoryContainerMixin {
 
     private Player cachedPlayer;
 
     @Inject(method = "<init>", at = @At("TAIL"))
     private void onInit(int id, Inventory playerInventory, CorpseEntity corpse, boolean editable, boolean history, CallbackInfo ci) {
-        this.cachedPlayer = playerInventory.player;
+        if (playerInventory != null) {
+            this.cachedPlayer = playerInventory.player;
+        }
     }
 
-    @Inject(method = "transferItems", at = @At("TAIL"), remap = false)
+    @Inject(method = "transferItems", at = @At("TAIL"))
     private void transferItemsToCurios(CallbackInfo ci) {
+        if (this.cachedPlayer == null) {
+            return;
+        }
+
         CorpseInventoryContainer container = (CorpseInventoryContainer) (Object) this;
+        if (container == null) {
+            return;
+        }
+
         Optional<ICuriosItemHandler> curiosOpt = CuriosApi.getCuriosHelper().getCuriosHandler(this.cachedPlayer).resolve();
 
         if (curiosOpt.isPresent()) {
             ICuriosItemHandler curiosHandler = curiosOpt.get();
 
+            if (this.cachedPlayer.getInventory() == null) {
+                return;
+            }
+
             for (int i = 0; i < this.cachedPlayer.getInventory().getContainerSize(); i++) {
                 ItemStack stack = this.cachedPlayer.getInventory().getItem(i);
 
-                if (!stack.isEmpty()) {
-                    boolean itemTransferred = false;
+                if (stack == null || stack.isEmpty()) {
+                    continue;
+                }
 
-                    for (Map.Entry<String, ICurioStacksHandler> entry : curiosHandler.getCurios().entrySet()) {
-                        ICurioStacksHandler handler = entry.getValue();
-                        String slotType = entry.getKey();
+                boolean itemTransferred = false;
 
-                        if (CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).contains(slotType)) {
-                            for (int slot = 0; slot < handler.getSlots(); slot++) {
-                                ItemStack currentSlotItem = handler.getStacks().getStackInSlot(slot);
+                Map<String, ICurioStacksHandler> curios = curiosHandler.getCurios();
+                if (curios == null) {
+                    continue;
+                }
 
-                                if (currentSlotItem.isEmpty()) {
-                                    handler.getStacks().setStackInSlot(slot, stack.copy());
-                                    this.cachedPlayer.getInventory().setItem(i, ItemStack.EMPTY);
-                                    itemTransferred = true;
-                                    break;
-                                }
+                for (Map.Entry<String, ICurioStacksHandler> entry : curios.entrySet()) {
+                    if (entry == null || entry.getValue() == null || entry.getKey() == null) {
+                        continue;
+                    }
+
+                    ICurioStacksHandler handler = entry.getValue();
+                    String slotType = entry.getKey();
+
+                    if (stack.getItem() == null) {
+                        continue;
+                    }
+
+                    if (CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).contains(slotType)) {
+                        for (int slot = 0; slot < handler.getSlots(); slot++) {
+                            ItemStack currentSlotItem = handler.getStacks().getStackInSlot(slot);
+
+                            if (currentSlotItem == null || currentSlotItem.isEmpty()) {
+                                handler.getStacks().setStackInSlot(slot, stack.copy());
+                                this.cachedPlayer.getInventory().setItem(i, ItemStack.EMPTY);
+                                itemTransferred = true;
+                                break;
                             }
                         }
-                        if (itemTransferred) {
-                            break;
-                        }
+                    }
+                    if (itemTransferred) {
+                        break;
                     }
                 }
             }
