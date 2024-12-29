@@ -13,6 +13,8 @@ import top.theillusivec4.curios.api.CuriosApi;
 import top.theillusivec4.curios.api.type.capability.ICuriosItemHandler;
 import top.theillusivec4.curios.api.type.inventory.ICurioStacksHandler;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -28,68 +30,62 @@ public abstract class CorpseInventoryContainerMixin {
         }
     }
 
-    @Inject(method = "transferItems", at = @At("TAIL"))
+    @Inject(method = "transferItems", at = @At("HEAD"))
     private void transferItemsToCurios(CallbackInfo ci) {
-        if (this.cachedPlayer == null) {
-            return;
-        }
+        if (this.cachedPlayer == null) return;
 
         CorpseInventoryContainer container = (CorpseInventoryContainer) (Object) this;
-        if (container == null) {
-            return;
-        }
+        if (!container.isEditable()) return;
 
         Optional<ICuriosItemHandler> curiosOpt = CuriosApi.getCuriosHelper().getCuriosHandler(this.cachedPlayer);
+        if (!curiosOpt.isPresent()) return;
 
-        if (curiosOpt.isPresent()) {
-            ICuriosItemHandler curiosHandler = curiosOpt.get();
+        ICuriosItemHandler curiosHandler = curiosOpt.get();
+        Map<String, ICurioStacksHandler> curios = curiosHandler.getCurios();
 
-            if (this.cachedPlayer.getInventory() == null) {
-                return;
+        List<Integer> processedSlots = new ArrayList<>();
+        for (int i = 0; i < this.cachedPlayer.getInventory().getContainerSize(); i++) {
+            ItemStack stack = this.cachedPlayer.getInventory().getItem(i);
+            if (stack.isEmpty() || CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).isEmpty()) {
+                continue;
             }
 
-            for (int i = 0; i < this.cachedPlayer.getInventory().getContainerSize(); i++) {
-                ItemStack stack = this.cachedPlayer.getInventory().getItem(i);
+            boolean itemTransferred = false;
+            for (Map.Entry<String, ICurioStacksHandler> entry : curios.entrySet()) {
+                if (entry == null || entry.getValue() == null) continue;
 
-                if (stack == null || stack.isEmpty()) {
-                    continue;
-                }
+                ICurioStacksHandler handler = entry.getValue();
+                String slotType = entry.getKey();
 
-                boolean itemTransferred = false;
+                if (CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).contains(slotType)) {
+                    for (int slot = 0; slot < handler.getSlots(); slot++) {
+                        ItemStack currentSlot = handler.getStacks().getStackInSlot(slot);
 
-                Map<String, ICurioStacksHandler> curios = curiosHandler.getCurios();
-                if (curios == null) {
-                    continue;
-                }
+                        if (currentSlot.isEmpty()) {
+                            handler.getStacks().setStackInSlot(slot, stack.copy());
+                            this.cachedPlayer.getInventory().setItem(i, ItemStack.EMPTY);
+                            itemTransferred = true;
+                            processedSlots.add(i);
+                            break;
+                        } else if (currentSlot.getItem() == stack.getItem()
+                                && ItemStack.isSameItemSameComponents(currentSlot, stack)
+                                && currentSlot.getCount() < currentSlot.getMaxStackSize()) {
+                            int canAdd = currentSlot.getMaxStackSize() - currentSlot.getCount();
+                            int toAdd = Math.min(canAdd, stack.getCount());
 
-                for (Map.Entry<String, ICurioStacksHandler> entry : curios.entrySet()) {
-                    if (entry == null || entry.getValue() == null || entry.getKey() == null) {
-                        continue;
-                    }
+                            currentSlot.grow(toAdd);
+                            stack.shrink(toAdd);
 
-                    ICurioStacksHandler handler = entry.getValue();
-                    String slotType = entry.getKey();
-
-                    if (stack.getItem() == null) {
-                        continue;
-                    }
-
-                    if (CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).contains(slotType)) {
-                        for (int slot = 0; slot < handler.getSlots(); slot++) {
-                            ItemStack currentSlotItem = handler.getStacks().getStackInSlot(slot);
-
-                            if (currentSlotItem == null || currentSlotItem.isEmpty()) {
-                                handler.getStacks().setStackInSlot(slot, stack.copy());
+                            if (stack.isEmpty()) {
                                 this.cachedPlayer.getInventory().setItem(i, ItemStack.EMPTY);
                                 itemTransferred = true;
+                                processedSlots.add(i);
                                 break;
                             }
                         }
                     }
-                    if (itemTransferred) {
-                        break;
-                    }
                 }
+                if (itemTransferred) break;
             }
         }
     }
