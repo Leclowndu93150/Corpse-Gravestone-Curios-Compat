@@ -13,14 +13,11 @@ import top.theillusivec4.curios.api.CuriosApi;
 import top.theillusivec4.curios.api.type.capability.ICuriosItemHandler;
 import top.theillusivec4.curios.api.type.inventory.ICurioStacksHandler;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 @Mixin(CorpseInventoryContainer.class)
 public abstract class CorpseInventoryContainerMixin {
-
     private Player cachedPlayer;
 
     @Inject(method = "<init>", at = @At("TAIL"))
@@ -30,63 +27,43 @@ public abstract class CorpseInventoryContainerMixin {
         }
     }
 
-    @Inject(method = "transferItems", at = @At("HEAD"))
+    @Inject(method = "transferItems", at = @At("HEAD"), cancellable = true)
     private void transferItemsToCurios(CallbackInfo ci) {
-        if (this.cachedPlayer == null) return;
-
         CorpseInventoryContainer container = (CorpseInventoryContainer) (Object) this;
-        if (!container.isEditable()) return;
+
+        if (!container.isEditable() || this.cachedPlayer == null) {
+            return;
+        }
 
         Optional<ICuriosItemHandler> curiosOpt = CuriosApi.getCuriosHelper().getCuriosHandler(this.cachedPlayer);
-        if (!curiosOpt.isPresent()) return;
+        if (!curiosOpt.isPresent()) {
+            return;
+        }
 
         ICuriosItemHandler curiosHandler = curiosOpt.get();
         Map<String, ICurioStacksHandler> curios = curiosHandler.getCurios();
 
-        List<Integer> processedSlots = new ArrayList<>();
-        for (int i = 0; i < this.cachedPlayer.getInventory().getContainerSize(); i++) {
-            ItemStack stack = this.cachedPlayer.getInventory().getItem(i);
-            if (stack.isEmpty() || CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).isEmpty()) {
-                continue;
-            }
-
-            boolean itemTransferred = false;
-            for (Map.Entry<String, ICurioStacksHandler> entry : curios.entrySet()) {
-                if (entry == null || entry.getValue() == null) continue;
-
-                ICurioStacksHandler handler = entry.getValue();
-                String slotType = entry.getKey();
-
-                if (CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).contains(slotType)) {
-                    for (int slot = 0; slot < handler.getSlots(); slot++) {
-                        ItemStack currentSlot = handler.getStacks().getStackInSlot(slot);
-
-                        if (currentSlot.isEmpty()) {
-                            handler.getStacks().setStackInSlot(slot, stack.copy());
-                            this.cachedPlayer.getInventory().setItem(i, ItemStack.EMPTY);
-                            itemTransferred = true;
-                            processedSlots.add(i);
-                            break;
-                        } else if (currentSlot.getItem() == stack.getItem()
-                                && ItemStack.isSameItemSameComponents(currentSlot, stack)
-                                && currentSlot.getCount() < currentSlot.getMaxStackSize()) {
-                            int canAdd = currentSlot.getMaxStackSize() - currentSlot.getCount();
-                            int toAdd = Math.min(canAdd, stack.getCount());
-
-                            currentSlot.grow(toAdd);
-                            stack.shrink(toAdd);
-
-                            if (stack.isEmpty()) {
-                                this.cachedPlayer.getInventory().setItem(i, ItemStack.EMPTY);
-                                itemTransferred = true;
-                                processedSlots.add(i);
+        for (int i = 0; i < container.getItems().size(); i++) {
+            ItemStack stack = container.getSlot(i).getItem();
+            if (!stack.isEmpty() && CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).size() > 0) {
+                boolean transferred = false;
+                for (Map.Entry<String, ICurioStacksHandler> entry : curios.entrySet()) {
+                    if (entry.getValue() != null && CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).contains(entry.getKey())) {
+                        ICurioStacksHandler handler = entry.getValue();
+                        for (int slot = 0; slot < handler.getSlots(); slot++) {
+                            ItemStack currentSlot = handler.getStacks().getStackInSlot(slot);
+                            if (currentSlot.isEmpty()) {
+                                handler.getStacks().setStackInSlot(slot, stack.copy());
+                                container.getSlot(i).set(ItemStack.EMPTY);
+                                transferred = true;
                                 break;
                             }
                         }
+                        if (transferred) break;
                     }
                 }
-                if (itemTransferred) break;
             }
         }
+
     }
 }
