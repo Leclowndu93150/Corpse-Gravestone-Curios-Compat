@@ -27,7 +27,7 @@ public abstract class CorpseInventoryContainerMixin {
         }
     }
 
-    @Inject(method = "transferItems", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "transferItems", at = @At("HEAD"), cancellable = true, remap = false)
     private void transferItemsToCurios(CallbackInfo ci) {
         CorpseInventoryContainer container = (CorpseInventoryContainer) (Object) this;
 

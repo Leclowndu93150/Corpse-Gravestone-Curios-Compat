@@ -27,7 +27,7 @@ public abstract class CorpseAdditionalContainerMixin {
         }
     }
 
-    @Inject(method = "transferItems", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "transferItems", at = @At("HEAD"), cancellable = true, remap = false)
     private void transferItemsToCurios(CallbackInfo ci) {
         de.maxhenkel.corpse.gui.CorpseAdditionalContainer container = (de.maxhenkel.corpse.gui.CorpseAdditionalContainer) (Object) this;
 
