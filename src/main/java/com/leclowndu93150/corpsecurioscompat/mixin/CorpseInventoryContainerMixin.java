@@ -21,14 +21,14 @@ import java.util.Optional;
 public abstract class CorpseInventoryContainerMixin {
     private Player cachedPlayer;
 
-    @Inject(method = "<init>", at = @At("TAIL"))
+    @Inject(method = "<init>", at = @At("TAIL"),remap = false)
     private void onInit(int id, Inventory playerInventory, CorpseEntity corpse, boolean editable, boolean history, CallbackInfo ci) {
         if (playerInventory != null) {
             this.cachedPlayer = playerInventory.player;
         }
     }
 
-    @Inject(method = "transferItems", at = @At("HEAD"))
+    @Inject(method = "transferItems", at = @At("HEAD"),remap = false)
     private void transferItemsToCurios(CallbackInfo ci) {
         CorpseInventoryContainer container = (CorpseInventoryContainer) (Object) this;
 
