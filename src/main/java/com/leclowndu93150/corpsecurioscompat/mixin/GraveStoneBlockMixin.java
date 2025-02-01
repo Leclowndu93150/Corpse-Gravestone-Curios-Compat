@@ -17,50 +17,106 @@ import java.util.Map;
 import java.util.Optional;
 
 @Mixin(GraveStoneBlock.class)
-public class GraveStoneBlockMixin {
+public abstract class GraveStoneBlockMixin {
 
     @Inject(
             method = "fillPlayerInventory",
-            at = @At("RETURN"),
+            at = @At("HEAD"),
             cancellable = true,
             remap = false
     )
-    private void handleCuriosItems(Player player, Death death, CallbackInfoReturnable<NonNullList<ItemStack>> cir) {
-        NonNullList<ItemStack> additionalItems = cir.getReturnValue();
-        Optional<ICuriosItemHandler> curiosOpt = CuriosApi.getCuriosHelper().getCuriosHandler(player).resolve();
+    private void handleItemTransfer(Player player, Death death, CallbackInfoReturnable<NonNullList<ItemStack>> cir) {
+        NonNullList<ItemStack> additionalItems = NonNullList.create();
 
+        // Handle Curios
+        Optional<ICuriosItemHandler> curiosOpt = CuriosApi.getCuriosHelper().getCuriosHandler(player).resolve();
         if (curiosOpt.isPresent()) {
             ICuriosItemHandler curiosHandler = curiosOpt.get();
 
-            for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-                ItemStack stack = player.getInventory().getItem(i);
+            // Process main inventory items
+            for (int i = 0; i < death.getMainInventory().size(); i++) {
+                ItemStack stack = death.getMainInventory().get(i);
+                if (!stack.isEmpty() && CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).size() > 0) {
+                    handleCurioItem(stack, curiosHandler, additionalItems, death.getMainInventory(), i);
+                }
+            }
 
-                if (!stack.isEmpty()) {
-                    boolean itemTransferred = false;
+            // Process armor inventory items
+            for (int i = 0; i < death.getArmorInventory().size(); i++) {
+                ItemStack stack = death.getArmorInventory().get(i);
+                if (!stack.isEmpty() && CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).size() > 0) {
+                    handleCurioItem(stack, curiosHandler, additionalItems, death.getArmorInventory(), i);
+                }
+            }
 
-                    for (Map.Entry<String, ICurioStacksHandler> entry : curiosHandler.getCurios().entrySet()) {
-                        ICurioStacksHandler handler = entry.getValue();
-                        String slotType = entry.getKey();
+            // Process offhand inventory items
+            for (int i = 0; i < death.getOffHandInventory().size(); i++) {
+                ItemStack stack = death.getOffHandInventory().get(i);
+                if (!stack.isEmpty() && CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).size() > 0) {
+                    handleCurioItem(stack, curiosHandler, additionalItems, death.getOffHandInventory(), i);
+                }
+            }
 
-                        if (CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).contains(slotType)) {
-                            for (int slot = 0; slot < handler.getSlots(); slot++) {
-                                ItemStack currentSlotItem = handler.getStacks().getStackInSlot(slot);
-
-                                if (currentSlotItem.isEmpty()) {
-                                    handler.getStacks().setStackInSlot(slot, stack.copy());
-                                    player.getInventory().setItem(i, ItemStack.EMPTY);
-                                    itemTransferred = true;
-                                    break;
-                                }
-                            }
-                        }
-                        if (itemTransferred) {
-                            break;
-                        }
-                    }
+            // Process additional items
+            for (int i = 0; i < death.getAdditionalItems().size(); i++) {
+                ItemStack stack = death.getAdditionalItems().get(i);
+                if (!stack.isEmpty() && CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).size() > 0) {
+                    handleCurioItem(stack, curiosHandler, additionalItems, death.getAdditionalItems(), i);
                 }
             }
         }
-        cir.setReturnValue(additionalItems);
+
+        // Process non-curio items
+        GraveStoneBlock block = (GraveStoneBlock) (Object) this;
+        block.fillInventory(additionalItems, death.getMainInventory(), player.getInventory().items);
+        block.fillInventory(additionalItems, death.getArmorInventory(), player.getInventory().armor);
+        block.fillInventory(additionalItems, death.getOffHandInventory(), player.getInventory().offhand);
+        additionalItems.addAll(death.getAdditionalItems());
+
+        // Clear additional items
+        death.getAdditionalItems().clear();
+
+        // Try to add items to player's inventory
+        NonNullList<ItemStack> restItems = NonNullList.create();
+        for (ItemStack stack : additionalItems) {
+            if (!player.getInventory().add(stack)) {
+                restItems.add(stack);
+            }
+        }
+
+        cir.setReturnValue(restItems);
+    }
+
+    private void handleCurioItem(ItemStack stack, ICuriosItemHandler curiosHandler, NonNullList<ItemStack> additionalItems, NonNullList<ItemStack> sourceInventory, int sourceIndex) {
+        boolean transferred = false;
+
+        for (Map.Entry<String, ICurioStacksHandler> entry : curiosHandler.getCurios().entrySet()) {
+            String slotType = entry.getKey();
+            ICurioStacksHandler handler = entry.getValue();
+
+            if (handler != null && CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).contains(slotType)) {
+                for (int slot = 0; slot < handler.getSlots(); slot++) {
+                    ItemStack currentSlot = handler.getStacks().getStackInSlot(slot);
+                    if (currentSlot.isEmpty()) {
+                        handler.getStacks().setStackInSlot(slot, stack.copy());
+                        sourceInventory.set(sourceIndex, ItemStack.EMPTY);
+                        transferred = true;
+                        break;
+                    } else {
+                        additionalItems.add(currentSlot.copy());
+                        handler.getStacks().setStackInSlot(slot, stack.copy());
+                        sourceInventory.set(sourceIndex, ItemStack.EMPTY);
+                        transferred = true;
+                        break;
+                    }
+                }
+            }
+            if (transferred) break;
+        }
+
+        if (!transferred) {
+            additionalItems.add(stack.copy());
+            sourceInventory.set(sourceIndex, ItemStack.EMPTY);
+        }
     }
 }
