@@ -21,14 +21,14 @@ import java.util.Optional;
 public abstract class CorpseInventoryContainerMixin {
     private Player cachedPlayer;
 
-    @Inject(method = "<init>", at = @At("TAIL"))
+    @Inject(method = "<init>", at = @At("TAIL"),remap = false)
     private void onInit(int id, Inventory playerInventory, CorpseEntity corpse, boolean editable, boolean history, CallbackInfo ci) {
         if (playerInventory != null) {
             this.cachedPlayer = playerInventory.player;
         }
     }
 
-    @Inject(method = "transferItems", at = @At("HEAD"))
+    @Inject(method = "transferItems", at = @At("HEAD"), remap = false)
     private void transferItemsToCurios(CallbackInfo ci) {
         CorpseInventoryContainer container = (CorpseInventoryContainer) (Object) this;
 
@@ -43,75 +43,26 @@ public abstract class CorpseInventoryContainerMixin {
 
         ICuriosItemHandler curiosHandler = curiosOpt.get();
         Map<String, ICurioStacksHandler> curios = curiosHandler.getCurios();
-        NonNullList<ItemStack> additionalItems = NonNullList.create();
 
         for (int i = 0; i < container.getItems().size(); i++) {
             ItemStack stack = container.getSlot(i).getItem();
             if (!stack.isEmpty() && CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).size() > 0) {
                 boolean transferred = false;
                 for (Map.Entry<String, ICurioStacksHandler> entry : curios.entrySet()) {
-                    if (entry.getValue() != null && CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).contains(entry.getKey())) {
+                    if (CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).contains(entry.getKey())) {
                         ICurioStacksHandler handler = entry.getValue();
                         for (int slot = 0; slot < handler.getSlots(); slot++) {
-                            ItemStack currentSlot = handler.getStacks().getStackInSlot(slot);
-                            if (currentSlot.isEmpty()) {
-                                handler.getStacks().setStackInSlot(slot, stack.copy());
-                                container.getSlot(i).set(ItemStack.EMPTY);
-                                transferred = true;
-                                break;
-                            } else {
-                                additionalItems.add(currentSlot.copy());
+                            if (handler.getStacks().getStackInSlot(slot).isEmpty()) {
                                 handler.getStacks().setStackInSlot(slot, stack.copy());
                                 container.getSlot(i).set(ItemStack.EMPTY);
                                 transferred = true;
                                 break;
                             }
                         }
-                        if (transferred) break;
                     }
-                }
-                if (!transferred) {
-                    additionalItems.add(stack.copy());
-                    container.getSlot(i).set(ItemStack.EMPTY);
+                    if (transferred) break;
                 }
             }
         }
-
-        CorpseEntity corpse = container.getCorpse();
-        NonNullList<ItemStack> corpseAdditionalItems = corpse.getDeath().getAdditionalItems();
-        for (int i = 0; i < corpseAdditionalItems.size(); i++) {
-            ItemStack stack = corpseAdditionalItems.get(i);
-            if (!stack.isEmpty() && CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).size() > 0) {
-                boolean transferred = false;
-                for (Map.Entry<String, ICurioStacksHandler> entry : curios.entrySet()) {
-                    if (entry.getValue() != null && CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).contains(entry.getKey())) {
-                        ICurioStacksHandler handler = entry.getValue();
-                        for (int slot = 0; slot < handler.getSlots(); slot++) {
-                            ItemStack currentSlot = handler.getStacks().getStackInSlot(slot);
-                            if (currentSlot.isEmpty()) {
-                                handler.getStacks().setStackInSlot(slot, stack.copy());
-                                corpseAdditionalItems.set(i, ItemStack.EMPTY);
-                                transferred = true;
-                                break;
-                            } else {
-                                additionalItems.add(currentSlot.copy());
-                                handler.getStacks().setStackInSlot(slot, stack.copy());
-                                corpseAdditionalItems.set(i, ItemStack.EMPTY);
-                                transferred = true;
-                                break;
-                            }
-                        }
-                        if (transferred) break;
-                    }
-                }
-                if (!transferred) {
-                    additionalItems.add(stack.copy());
-                    corpseAdditionalItems.set(i, ItemStack.EMPTY);
-                }
-            }
-        }
-
-        corpseAdditionalItems.removeIf(ItemStack::isEmpty);
-        corpseAdditionalItems.addAll(additionalItems);
     }
 }
