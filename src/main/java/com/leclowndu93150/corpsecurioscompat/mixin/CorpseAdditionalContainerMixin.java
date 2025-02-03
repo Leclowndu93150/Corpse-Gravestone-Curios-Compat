@@ -31,36 +31,30 @@ public abstract class CorpseAdditionalContainerMixin {
         CorpseAdditionalContainer container = (CorpseAdditionalContainer) (Object) this;
 
         Optional<ICuriosItemHandler> curiosOpt = CuriosApi.getCuriosHelper().getCuriosHandler(this.cachedPlayer).resolve();
+        if (!curiosOpt.isPresent()) {
+            return;
+        }
 
-        if (curiosOpt.isPresent()) {
-            ICuriosItemHandler curiosHandler = curiosOpt.get();
+        ICuriosItemHandler curiosHandler = curiosOpt.get();
+        Map<String, ICurioStacksHandler> curios = curiosHandler.getCurios();
 
-            for (int i = 0; i < container.getItems().size(); i++) {
-                ItemStack stack = container.getSlot(i).getItem();
-
-                if (!stack.isEmpty()) {
-                    boolean itemTransferred = false;
-
-                    for (Map.Entry<String, ICurioStacksHandler> entry : curiosHandler.getCurios().entrySet()) {
+        for (int i = 0; i < container.getItems().size(); i++) {
+            ItemStack stack = container.getSlot(i).getItem();
+            if (!stack.isEmpty() && CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).size() > 0) {
+                boolean transferred = false;
+                for (Map.Entry<String, ICurioStacksHandler> entry : curios.entrySet()) {
+                    if (CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).contains(entry.getKey())) {
                         ICurioStacksHandler handler = entry.getValue();
-                        String slotType = entry.getKey();
-
-                        if (CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).contains(slotType)) {
-                            for (int slot = 0; slot < handler.getSlots(); slot++) {
-                                ItemStack currentSlotItem = handler.getStacks().getStackInSlot(slot);
-
-                                if (currentSlotItem.isEmpty()) {
-                                    handler.getStacks().setStackInSlot(slot, stack.copy());
-                                    container.setItem(i, 1, ItemStack.EMPTY);
-                                    itemTransferred = true;
-                                    break;
-                                }
+                        for (int slot = 0; slot < handler.getSlots(); slot++) {
+                            if (handler.getStacks().getStackInSlot(slot).isEmpty()) {
+                                handler.getStacks().setStackInSlot(slot, stack.copy());
+                                container.setItem(i, 1, ItemStack.EMPTY);
+                                transferred = true;
+                                break;
                             }
                         }
-                        if (itemTransferred) {
-                            break;
-                        }
                     }
+                    if (transferred) break;
                 }
             }
         }
