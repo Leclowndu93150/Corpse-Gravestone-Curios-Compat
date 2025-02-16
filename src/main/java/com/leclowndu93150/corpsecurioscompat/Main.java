@@ -1,9 +1,5 @@
 package com.leclowndu93150.corpsecurioscompat;
 
-import de.maxhenkel.corpse.corelib.death.PlayerDeathEvent;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.common.NeoForge;
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
@@ -19,6 +15,7 @@ public class Main
     private static final Logger LOGGER = LogUtils.getLogger();
 
     public Main(IEventBus modEventBus, ModContainer modContainer) {
+        Config.register(modContainer);
         LOGGER.info("Hello from Corpse Curios Compat!");
     }
 
