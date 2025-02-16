@@ -1,5 +1,6 @@
 package com.leclowndu93150.corpsecurioscompat.mixin;
 
+import com.leclowndu93150.corpsecurioscompat.Config;
 import de.maxhenkel.gravestone.blocks.GraveStoneBlock;
 import de.maxhenkel.gravestone.corelib.death.Death;
 import net.minecraft.core.NonNullList;
@@ -61,7 +62,7 @@ public abstract class GraveStoneBlockMixin {
     private void transferCuriosFromInventory(NonNullList<ItemStack> inventory, ICuriosItemHandler curiosHandler, NonNullList<ItemStack> overflow) {
         for (int i = 0; i < inventory.size(); i++) {
             ItemStack stack = inventory.get(i);
-            if (!stack.isEmpty() && CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).size() > 0) {
+            if (!stack.isEmpty() && !Config.isItemBlacklisted(stack.getItem()) && CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).size() > 0) {
                 boolean transferred = false;
 
                 for (Map.Entry<String, ICurioStacksHandler> entry : curiosHandler.getCurios().entrySet()) {

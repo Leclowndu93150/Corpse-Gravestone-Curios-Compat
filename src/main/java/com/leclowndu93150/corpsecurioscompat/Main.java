@@ -11,6 +11,7 @@ public class Main {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     public Main() {
+        Config.register();
        LOGGER.info("Hello from Gravestone Curios Compat!");
     }
 
