@@ -15,6 +15,7 @@ public class Main
     private static final Logger LOGGER = LogUtils.getLogger();
 
     public Main(IEventBus modEventBus, ModContainer modContainer) {
+        Config.register(modContainer);
         LOGGER.info("Hello from Gravestone Curios Compat!");
     }
 
