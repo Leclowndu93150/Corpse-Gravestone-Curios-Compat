@@ -1,5 +1,6 @@
 package com.leclowndu93150.corpsecurioscompat.mixin;
 
+import com.leclowndu93150.corpsecurioscompat.Config;
 import de.maxhenkel.corpse.entities.CorpseEntity;
 import de.maxhenkel.corpse.gui.CorpseAdditionalContainer;
 import de.maxhenkel.corpse.gui.CorpseInventoryContainer;
@@ -51,6 +52,7 @@ public abstract class CorpseContainerMixin {
         for (int i = 0; i < items.size(); i++) {
             ItemStack stack = items.get(i);
             if (stack.isEmpty() || CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).isEmpty()) continue;
+            if (Config.isItemBlacklisted(stack.getItem())) continue;
 
             for (Map.Entry<String, ICurioStacksHandler> entry : curios.entrySet()) {
                 if (!CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).contains(entry.getKey())) continue;
