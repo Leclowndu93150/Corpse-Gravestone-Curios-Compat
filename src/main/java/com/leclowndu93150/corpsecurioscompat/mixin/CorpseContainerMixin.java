@@ -3,6 +3,7 @@ package com.leclowndu93150.corpsecurioscompat.mixin;
 import com.leclowndu93150.corpsecurioscompat.Config;
 import de.maxhenkel.corpse.entities.CorpseEntity;
 import de.maxhenkel.corpse.gui.CorpseAdditionalContainer;
+import de.maxhenkel.corpse.gui.CorpseContainerBase;
 import de.maxhenkel.corpse.gui.CorpseInventoryContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -34,6 +35,8 @@ public abstract class CorpseContainerMixin {
     private void transferItemsToCurios(CallbackInfo ci) {
         Object container = this;
         if (!cachedPlayer.isAlive()) return;
+
+        if(!((CorpseContainerBase) container).isEditable()) return;
 
         boolean isCorpseInv = container instanceof CorpseInventoryContainer;
         boolean isAdditional = container instanceof CorpseAdditionalContainer;
