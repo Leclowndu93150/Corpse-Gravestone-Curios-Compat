@@ -1,11 +1,14 @@
 package com.leclowndu93150.corpsecurioscompat.mixin;
 
 import com.leclowndu93150.corpsecurioscompat.Config;
+import de.maxhenkel.corpse.corelib.inventory.ContainerBase;
 import de.maxhenkel.corpse.entities.CorpseEntity;
 import de.maxhenkel.corpse.gui.CorpseAdditionalContainer;
+import de.maxhenkel.corpse.gui.CorpseContainerBase;
 import de.maxhenkel.corpse.gui.CorpseInventoryContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -34,42 +37,77 @@ public abstract class CorpseContainerMixin {
         Object container = this;
         if (!cachedPlayer.isAlive()) return;
 
+        if(!((CorpseContainerBase) container).isEditable()) return;
+
         boolean isCorpseInv = container instanceof CorpseInventoryContainer;
         boolean isAdditional = container instanceof CorpseAdditionalContainer;
 
-        java.util.List<ItemStack> items = isCorpseInv ?
-                ((CorpseInventoryContainer)container).getItems() :
-                ((CorpseAdditionalContainer)container).getItems();
-
         Optional<ICuriosItemHandler> curiosOpt = CuriosApi.getCuriosHelper().getCuriosHandler(cachedPlayer);
-        if (curiosOpt.isEmpty()) {
-            return;
-        }
+        if (curiosOpt.isEmpty()) return;
 
         ICuriosItemHandler curiosHandler = curiosOpt.get();
         Map<String, ICurioStacksHandler> curios = curiosHandler.getCurios();
 
-        for (int i = 0; i < items.size(); i++) {
-            ItemStack stack = items.get(i);
-            if (stack.isEmpty() || CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).isEmpty()) continue;
-            if(Config.isItemBlacklisted(stack.getItem())) continue;
+        if (isCorpseInv) {
+            CorpseInventoryContainer corpseContainer = (CorpseInventoryContainer) container;
 
-            for (Map.Entry<String, ICurioStacksHandler> entry : curios.entrySet()) {
-                if (!CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).contains(entry.getKey())) continue;
+            for (int i = 0; i < corpseContainer.slots.size(); i++) {
+                if (i >= corpseContainer.getInventorySize()) break;
 
-                ICurioStacksHandler handler = entry.getValue();
-                for (int slot = 0; slot < handler.getSlots(); slot++) {
-                    if (!handler.getStacks().getStackInSlot(slot).isEmpty()) continue;
+                Slot slot = corpseContainer.getSlot(i);
+                ItemStack stack = slot.getItem();
 
-                    handler.getStacks().setStackInSlot(slot, stack.copy());
-                    if (isCorpseInv) {
-                        ((CorpseInventoryContainer)container).getSlot(i).set(ItemStack.EMPTY);
-                    } else {
-                        ((CorpseAdditionalContainer)container).setItem(i, 1, ItemStack.EMPTY);
-                    }
-                    break;
+                if (tryTransferToCurios(stack, curios)) {
+                    slot.set(ItemStack.EMPTY);
+                }
+            }
+
+            for (int i = 0; i < corpseContainer.getCorpse().getDeath().getAdditionalItems().size(); i++) {
+                ItemStack stack = corpseContainer.getCorpse().getDeath().getAdditionalItems().get(i);
+                if (tryTransferToCurios(stack, curios)) {
+                    corpseContainer.getCorpse().getDeath().getAdditionalItems().set(i, ItemStack.EMPTY);
+                }
+            }
+        } else if (isAdditional) {
+            CorpseAdditionalContainer additionalContainer = (CorpseAdditionalContainer) container;
+
+            for (int i = 0; i < additionalContainer.getInventorySize(); i++) {
+                Slot slot = additionalContainer.getSlot(i);
+                if (slot == null) continue;
+
+                ItemStack stack = slot.getItem();
+                if (tryTransferToCurios(stack, curios)) {
+                    slot.set(ItemStack.EMPTY);
                 }
             }
         }
+    }
+
+    private boolean tryTransferToCurios(ItemStack stack, Map<String, ICurioStacksHandler> curios) {
+        if (stack.isEmpty() || CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).isEmpty()) {
+            return false;
+        }
+
+        if (Config.isItemBlacklisted(stack.getItem())) {
+            return false;
+        }
+
+        for (Map.Entry<String, ICurioStacksHandler> entry : curios.entrySet()) {
+            if (!CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).contains(entry.getKey())) {
+                continue;
+            }
+
+            ICurioStacksHandler handler = entry.getValue();
+            for (int slot = 0; slot < handler.getSlots(); slot++) {
+                if (!handler.getStacks().getStackInSlot(slot).isEmpty()) {
+                    continue;
+                }
+
+                handler.getStacks().setStackInSlot(slot, stack.copy());
+                return true;
+            }
+        }
+
+        return false;
     }
 }
