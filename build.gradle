@@ -134,6 +134,7 @@ repositories {
     maven {
         url "https://cursemaven.com"
     }
+    mavenCentral()
 }
 
 dependencies {
@@ -144,8 +145,9 @@ dependencies {
     // then special handling is done to allow a setup of a vanilla dependency without the use of an external repository.
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 
-    implementation fg.deobf("curse.maven:corpse-316582:5816905")
-    implementation fg.deobf("curse.maven:curios-309927:5843737")
+    implementation fg.deobf("curse.maven:corpse-316582:6121243")
+    implementation fg.deobf("curse.maven:curios-309927:6418456")
+    implementation fg.deobf(files("libs/baguettelib-1.20.1-Forge-1.0.0.jar"))
 
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 

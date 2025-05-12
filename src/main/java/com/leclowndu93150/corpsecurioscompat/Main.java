@@ -1,5 +1,6 @@
 package com.leclowndu93150.corpsecurioscompat;
 
+import com.leclowndu93150.baguettelib.event.entity.death.PlayerDeathEvent;
 import com.mojang.logging.LogUtils;
 import net.minecraftforge.fml.common.Mod;
 import org.slf4j.Logger;
