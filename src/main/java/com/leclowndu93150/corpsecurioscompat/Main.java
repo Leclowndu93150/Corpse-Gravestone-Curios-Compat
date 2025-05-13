@@ -16,6 +16,7 @@ public class Main
 
     public Main(IEventBus modEventBus, ModContainer modContainer) {
         Config.register(modContainer);
+        CuriosSlotDataComponent.DATA_COMPONENTS.register(modEventBus);
         LOGGER.info("Hello from Corpse Curios Compat!");
     }
 

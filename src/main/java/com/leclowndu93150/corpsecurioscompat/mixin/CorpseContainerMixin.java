@@ -1,7 +1,7 @@
 package com.leclowndu93150.corpsecurioscompat.mixin;
 
 import com.leclowndu93150.corpsecurioscompat.Config;
-import de.maxhenkel.corpse.corelib.inventory.ContainerBase;
+import com.leclowndu93150.corpsecurioscompat.CuriosSlotDataComponent;
 import de.maxhenkel.corpse.entities.CorpseEntity;
 import de.maxhenkel.corpse.gui.CorpseAdditionalContainer;
 import de.maxhenkel.corpse.gui.CorpseContainerBase;
@@ -35,20 +35,23 @@ public abstract class CorpseContainerMixin {
     @Inject(method = "transferItems", at = @At("HEAD"), cancellable = true, remap = false)
     private void transferItemsToCurios(CallbackInfo ci) {
         Object container = this;
-        if (!cachedPlayer.isAlive()) return;
+        if (!cachedPlayer.isAlive()) {
+            return;
+        }
 
-        if(!((CorpseContainerBase) container).isEditable()) return;
+        if(!((CorpseContainerBase) container).isEditable()) {
+            return;
+        }
 
-        boolean isCorpseInv = container instanceof CorpseInventoryContainer;
-        boolean isAdditional = container instanceof CorpseAdditionalContainer;
-
-        Optional<ICuriosItemHandler> curiosOpt = CuriosApi.getCuriosHelper().getCuriosHandler(cachedPlayer);
-        if (curiosOpt.isEmpty()) return;
+        Optional<ICuriosItemHandler> curiosOpt = CuriosApi.getCuriosInventory(cachedPlayer);
+        if (curiosOpt.isEmpty()) {
+            return;
+        }
 
         ICuriosItemHandler curiosHandler = curiosOpt.get();
         Map<String, ICurioStacksHandler> curios = curiosHandler.getCurios();
 
-        if (isCorpseInv) {
+        if (container instanceof CorpseInventoryContainer) {
             CorpseInventoryContainer corpseContainer = (CorpseInventoryContainer) container;
 
             for (int i = 0; i < corpseContainer.slots.size(); i++) {
@@ -57,18 +60,18 @@ public abstract class CorpseContainerMixin {
                 Slot slot = corpseContainer.getSlot(i);
                 ItemStack stack = slot.getItem();
 
-                if (tryTransferToCurios(stack, curios)) {
+                if (!stack.isEmpty() && tryTransferPreviouslyEquippedCurio(stack, curios)) {
                     slot.set(ItemStack.EMPTY);
                 }
             }
 
             for (int i = 0; i < corpseContainer.getCorpse().getDeath().getAdditionalItems().size(); i++) {
                 ItemStack stack = corpseContainer.getCorpse().getDeath().getAdditionalItems().get(i);
-                if (tryTransferToCurios(stack, curios)) {
+                if (!stack.isEmpty() && tryTransferPreviouslyEquippedCurio(stack, curios)) {
                     corpseContainer.getCorpse().getDeath().getAdditionalItems().set(i, ItemStack.EMPTY);
                 }
             }
-        } else if (isAdditional) {
+        } else if (container instanceof CorpseAdditionalContainer) {
             CorpseAdditionalContainer additionalContainer = (CorpseAdditionalContainer) container;
 
             for (int i = 0; i < additionalContainer.getInventorySize(); i++) {
@@ -76,19 +79,65 @@ public abstract class CorpseContainerMixin {
                 if (slot == null) continue;
 
                 ItemStack stack = slot.getItem();
-                if (tryTransferToCurios(stack, curios)) {
+                if (!stack.isEmpty() && tryTransferPreviouslyEquippedCurio(stack, curios)) {
                     slot.set(ItemStack.EMPTY);
                 }
             }
         }
     }
 
-    private boolean tryTransferToCurios(ItemStack stack, Map<String, ICurioStacksHandler> curios) {
-        if (stack.isEmpty() || CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).isEmpty()) {
+    private boolean tryTransferPreviouslyEquippedCurio(ItemStack stack, Map<String, ICurioStacksHandler> curios) {
+        if (stack.isEmpty()) return false;
+
+        if (CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).isEmpty()) {
+            return false;
+        }
+
+        CuriosSlotDataComponent.CurioSlotData slotData = stack.get(CuriosSlotDataComponent.CURIO_SLOT_DATA.get());
+        if (slotData == null || !slotData.wasEquipped()) {
             return false;
         }
 
         if (Config.isItemBlacklisted(stack.getItem())) {
+            return false;
+        }
+
+        String slotType = slotData.slotType();
+        int slotIndex = slotData.slotIndex();
+
+        ICurioStacksHandler handler = curios.get(slotType);
+        if (handler != null && slotIndex >= 0 && slotIndex < handler.getSlots()) {
+            ItemStack existingStack = handler.getStacks().getStackInSlot(slotIndex);
+
+            if (existingStack.isEmpty()) {
+                ItemStack cleanStack = stack.copy();
+                cleanStack.remove(CuriosSlotDataComponent.CURIO_SLOT_DATA.get());
+                handler.getStacks().setStackInSlot(slotIndex, cleanStack);
+                return true;
+            }
+
+            CuriosSlotDataComponent.CurioSlotData existingSlotData =
+                    existingStack.get(CuriosSlotDataComponent.CURIO_SLOT_DATA.get());
+            if (existingSlotData != null &&
+                    (!slotType.equals(existingSlotData.slotType()) || slotIndex != existingSlotData.slotIndex())) {
+
+                handler.getStacks().setStackInSlot(slotIndex, ItemStack.EMPTY);
+
+                ItemStack cleanStack = stack.copy();
+                cleanStack.remove(CuriosSlotDataComponent.CURIO_SLOT_DATA.get());
+                handler.getStacks().setStackInSlot(slotIndex, cleanStack);
+
+                tryFindAlternativeSlot(existingStack, curios);
+                return true;
+            }
+        }
+
+        return tryFindAlternativeSlot(stack, curios);
+    }
+
+    private boolean tryFindAlternativeSlot(ItemStack stack, Map<String, ICurioStacksHandler> curios) {
+        CuriosSlotDataComponent.CurioSlotData slotData = stack.get(CuriosSlotDataComponent.CURIO_SLOT_DATA.get());
+        if (slotData == null || !slotData.wasEquipped()) {
             return false;
         }
 
@@ -99,12 +148,12 @@ public abstract class CorpseContainerMixin {
 
             ICurioStacksHandler handler = entry.getValue();
             for (int slot = 0; slot < handler.getSlots(); slot++) {
-                if (!handler.getStacks().getStackInSlot(slot).isEmpty()) {
-                    continue;
+                if (handler.getStacks().getStackInSlot(slot).isEmpty()) {
+                    ItemStack cleanStack = stack.copy();
+                    cleanStack.remove(CuriosSlotDataComponent.CURIO_SLOT_DATA.get());
+                    handler.getStacks().setStackInSlot(slot, cleanStack);
+                    return true;
                 }
-
-                handler.getStacks().setStackInSlot(slot, stack.copy());
-                return true;
             }
         }
 

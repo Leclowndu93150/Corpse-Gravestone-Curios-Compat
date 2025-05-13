@@ -117,6 +117,7 @@ configurations {
 dependencies {
     implementation "curse.maven:corpse-316582:5816706"
     implementation "curse.maven:curios-continuation-1037991:5888964"
+    implementation "curse.maven:baguettelib-1264423:6523363"
     runtimeOnly "curse.maven:artifacts-312353:5624722"
     runtimeOnly "curse.maven:cloth-config-348521:5729127"
     runtimeOnly "curse.maven:architectury-api-419699:5786327"
