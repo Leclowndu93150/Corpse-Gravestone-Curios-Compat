@@ -41,7 +41,7 @@ public abstract class CorpseContainerMixin {
     @Inject(method = "transferItems", at = @At("HEAD"), cancellable = true, remap = false)
     private void transferItemsToCurios(CallbackInfo ci) {
         Object container = this;
-        if (!cachedPlayer.isAlive()) {
+        if (cachedPlayer == null || !cachedPlayer.isAlive()) {
             return;
         }
 
@@ -64,6 +64,8 @@ public abstract class CorpseContainerMixin {
                 if (i >= corpseContainer.getInventorySize()) break;
 
                 Slot slot = corpseContainer.getSlot(i);
+                if (slot == null) continue;
+
                 ItemStack stack = slot.getItem();
 
                 if (!stack.isEmpty() && tryTransferPreviouslyEquippedCurio(stack, curios)) {
@@ -120,31 +122,34 @@ public abstract class CorpseContainerMixin {
 
         ICurioStacksHandler handler = curios.get(slotType);
         if (handler != null && slotIndex >= 0 && slotIndex < handler.getSlots()) {
-            ItemStack existingStack = handler.getStacks().getStackInSlot(slotIndex);
+            try {
+                ItemStack existingStack = handler.getStacks().getStackInSlot(slotIndex);
 
-            if (existingStack.isEmpty()) {
-                ItemStack cleanStack = stack.copy();
-                cleanSlotData(cleanStack);
-                handler.getStacks().setStackInSlot(slotIndex, cleanStack);
-                return true;
-            }
-
-            CompoundTag existingTag = existingStack.getTag();
-            if (existingTag != null && existingTag.contains(CURIO_SLOT_TAG)) {
-                CompoundTag existingSlotData = existingTag.getCompound(CURIO_SLOT_TAG);
-                if (!slotType.equals(existingSlotData.getString(CURIO_SLOT_TYPE)) ||
-                        slotIndex != existingSlotData.getInt(CURIO_SLOT_INDEX)) {
-
-                    handler.getStacks().setStackInSlot(slotIndex, ItemStack.EMPTY);
-
+                if (existingStack.isEmpty()) {
                     ItemStack cleanStack = stack.copy();
                     cleanSlotData(cleanStack);
                     handler.getStacks().setStackInSlot(slotIndex, cleanStack);
-
-
-                    tryFindAlternativeSlot(existingStack, curios);
                     return true;
                 }
+
+                CompoundTag existingTag = existingStack.getTag();
+                if (existingTag != null && existingTag.contains(CURIO_SLOT_TAG)) {
+                    CompoundTag existingSlotData = existingTag.getCompound(CURIO_SLOT_TAG);
+                    if (!slotType.equals(existingSlotData.getString(CURIO_SLOT_TYPE)) ||
+                            slotIndex != existingSlotData.getInt(CURIO_SLOT_INDEX)) {
+
+                        handler.getStacks().setStackInSlot(slotIndex, ItemStack.EMPTY);
+
+                        ItemStack cleanStack = stack.copy();
+                        cleanSlotData(cleanStack);
+                        handler.getStacks().setStackInSlot(slotIndex, cleanStack);
+
+                        tryFindAlternativeSlot(existingStack, curios);
+                        return true;
+                    }
+                }
+            } catch (IndexOutOfBoundsException e) {
+                return tryFindAlternativeSlot(stack, curios);
             }
         }
 
@@ -169,11 +174,14 @@ public abstract class CorpseContainerMixin {
 
             ICurioStacksHandler handler = entry.getValue();
             for (int slot = 0; slot < handler.getSlots(); slot++) {
-                if (handler.getStacks().getStackInSlot(slot).isEmpty()) {
-                    ItemStack cleanStack = stack.copy();
-                    cleanSlotData(cleanStack);
-                    handler.getStacks().setStackInSlot(slot, cleanStack);
-                    return true;
+                try {
+                    if (handler.getStacks().getStackInSlot(slot).isEmpty()) {
+                        ItemStack cleanStack = stack.copy();
+                        cleanSlotData(cleanStack);
+                        handler.getStacks().setStackInSlot(slot, cleanStack);
+                        return true;
+                    }
+                } catch (IndexOutOfBoundsException e) {
                 }
             }
         }
