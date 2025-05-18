@@ -1,0 +1,56 @@
+package com.leclowndu93150.corpsecurioscompat;
+
+import com.leclowndu93150.baguettelib.event.entity.death.PlayerDeathEvent;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.neoforged.bus.api.EventPriority;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import top.theillusivec4.curios.api.CuriosApi;
+import top.theillusivec4.curios.api.type.capability.ICuriosItemHandler;
+import top.theillusivec4.curios.api.type.inventory.ICurioStacksHandler;
+
+import java.util.Map;
+
+@EventBusSubscriber(modid = "gravestonecurioscompat")
+public class DeathEventHandler {
+
+    @SubscribeEvent(priority = EventPriority.HIGH)
+    public static void onPlayerDeathPre(PlayerDeathEvent.Pre event) {
+        Player player = event.getPlayer();
+        var curioHandlerOptional = CuriosApi.getCuriosInventory(player);
+        if (!curioHandlerOptional.isPresent()) {
+            return;
+        }
+
+        ICuriosItemHandler handler = curioHandlerOptional.get();
+        Map<String, ICurioStacksHandler> curios = handler.getCurios();
+
+        for (Map.Entry<String, ICurioStacksHandler> entry : curios.entrySet()) {
+            String slotType = entry.getKey();
+            ICurioStacksHandler stackHandler = entry.getValue();
+
+            //main curio slots
+            for (int i = 0; i < stackHandler.getSlots(); i++) {
+                ItemStack stack = stackHandler.getStacks().getStackInSlot(i);
+                if (!stack.isEmpty()) {
+                    setSlotData(stack, slotType, i, true);
+                }
+            }
+
+            //cosmetic curio slots
+            for (int i = 0; i < stackHandler.getCosmeticStacks().getSlots(); i++) {
+                ItemStack stack = stackHandler.getCosmeticStacks().getStackInSlot(i);
+                if (!stack.isEmpty()) {
+                    setSlotData(stack, slotType, i, true);
+                }
+            }
+        }
+    }
+
+    private static void setSlotData(ItemStack stack, String slotType, int slotIndex, boolean wasEquipped) {
+        CuriosSlotDataComponent.CurioSlotData slotData =
+                new CuriosSlotDataComponent.CurioSlotData(slotType, slotIndex, wasEquipped);
+        stack.set(CuriosSlotDataComponent.CURIO_SLOT_DATA.get(), slotData);
+    }
+}

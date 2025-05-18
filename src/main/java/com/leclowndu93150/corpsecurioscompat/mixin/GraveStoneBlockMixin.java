@@ -1,6 +1,7 @@
 package com.leclowndu93150.corpsecurioscompat.mixin;
 
 import com.leclowndu93150.corpsecurioscompat.Config;
+import com.leclowndu93150.corpsecurioscompat.CuriosSlotDataComponent;
 import de.maxhenkel.gravestone.blocks.GraveStoneBlock;
 import de.maxhenkel.gravestone.corelib.death.Death;
 import net.minecraft.core.NonNullList;
@@ -26,19 +27,14 @@ public abstract class GraveStoneBlockMixin {
     @Overwrite(remap = false)
     public NonNullList<ItemStack> fillPlayerInventory(Player player, Death death) {
         NonNullList<ItemStack> unaddedItems = NonNullList.create();
-        Optional<ICuriosItemHandler> curiosHandler = CuriosApi.getCuriosHelper().getCuriosHandler(player);
+        Optional<ICuriosItemHandler> curiosHandler = CuriosApi.getCuriosInventory(player);
 
-        // I had to add steps because i am so retarded and can't figure out how to do it correctly
-
-        // Step 1: Handle Curios items
         if (curiosHandler.isPresent()) {
             handleCuriosTransfer(curiosHandler.get(), death, unaddedItems);
         }
 
-        // Step 2: Handle regular inventory
         handleNormalInventoryTransfer(player, death, unaddedItems);
 
-        // Step 3: Try to add remaining items to player inventory
         NonNullList<ItemStack> overflow = NonNullList.create();
         for (ItemStack stack : unaddedItems) {
             if (!player.getInventory().add(stack)) {
@@ -62,39 +58,94 @@ public abstract class GraveStoneBlockMixin {
     private void transferCuriosFromInventory(NonNullList<ItemStack> inventory, ICuriosItemHandler curiosHandler, NonNullList<ItemStack> overflow) {
         for (int i = 0; i < inventory.size(); i++) {
             ItemStack stack = inventory.get(i);
-            if (!stack.isEmpty() && !Config.isItemBlacklisted(stack.getItem()) && CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).size() > 0) {
-                boolean transferred = false;
+            if (!stack.isEmpty() && tryTransferPreviouslyEquippedCurio(stack, curiosHandler.getCurios())) {
+                inventory.set(i, ItemStack.EMPTY);
+            }
+        }
+    }
 
-                for (Map.Entry<String, ICurioStacksHandler> entry : curiosHandler.getCurios().entrySet()) {
-                    String slotType = entry.getKey();
-                    ICurioStacksHandler handler = entry.getValue();
+    @Unique
+    private boolean tryTransferPreviouslyEquippedCurio(ItemStack stack, Map<String, ICurioStacksHandler> curios) {
+        if (stack.isEmpty()) return false;
 
-                    if (handler != null && CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).contains(slotType)) {
-                        for (int slot = 0; slot < handler.getSlots(); slot++) {
-                            ItemStack existingStack = handler.getStacks().getStackInSlot(slot);
-                            if (existingStack.isEmpty()) {
-                                handler.getStacks().setStackInSlot(slot, stack.copy());
-                                inventory.set(i, ItemStack.EMPTY);
-                                transferred = true;
-                                break;
-                            } else {
-                                overflow.add(existingStack.copy());
-                                handler.getStacks().setStackInSlot(slot, stack.copy());
-                                inventory.set(i, ItemStack.EMPTY);
-                                transferred = true;
-                                break;
-                            }
-                        }
-                    }
-                    if (transferred) break;
+        if (CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).isEmpty()) {
+            return false;
+        }
+
+        CuriosSlotDataComponent.CurioSlotData slotData = stack.get(CuriosSlotDataComponent.CURIO_SLOT_DATA.get());
+        if (slotData == null || !slotData.wasEquipped()) {
+            return false;
+        }
+
+        if (Config.isItemBlacklisted(stack.getItem())) {
+            return false;
+        }
+
+        String slotType = slotData.slotType();
+        int slotIndex = slotData.slotIndex();
+
+        ICurioStacksHandler handler = curios.get(slotType);
+        if (handler != null && slotIndex >= 0 && slotIndex < handler.getSlots()) {
+            try {
+                ItemStack existingStack = handler.getStacks().getStackInSlot(slotIndex);
+
+                if (existingStack.isEmpty()) {
+                    ItemStack cleanStack = stack.copy();
+                    cleanStack.remove(CuriosSlotDataComponent.CURIO_SLOT_DATA.get());
+                    handler.getStacks().setStackInSlot(slotIndex, cleanStack);
+                    return true;
                 }
 
-                if (!transferred) {
-                    overflow.add(stack.copy());
-                    inventory.set(i, ItemStack.EMPTY);
+                CuriosSlotDataComponent.CurioSlotData existingSlotData =
+                        existingStack.get(CuriosSlotDataComponent.CURIO_SLOT_DATA.get());
+                if (existingSlotData != null &&
+                        (!slotType.equals(existingSlotData.slotType()) || slotIndex != existingSlotData.slotIndex())) {
+
+                    handler.getStacks().setStackInSlot(slotIndex, ItemStack.EMPTY);
+
+                    ItemStack cleanStack = stack.copy();
+                    cleanStack.remove(CuriosSlotDataComponent.CURIO_SLOT_DATA.get());
+                    handler.getStacks().setStackInSlot(slotIndex, cleanStack);
+
+                    tryFindAlternativeSlot(existingStack, curios);
+                    return true;
+                }
+            } catch (IndexOutOfBoundsException e) {
+                return tryFindAlternativeSlot(stack, curios);
+            }
+        }
+
+        return tryFindAlternativeSlot(stack, curios);
+    }
+
+    @Unique
+    private boolean tryFindAlternativeSlot(ItemStack stack, Map<String, ICurioStacksHandler> curios) {
+        CuriosSlotDataComponent.CurioSlotData slotData = stack.get(CuriosSlotDataComponent.CURIO_SLOT_DATA.get());
+        if (slotData == null || !slotData.wasEquipped()) {
+            return false;
+        }
+
+        for (Map.Entry<String, ICurioStacksHandler> entry : curios.entrySet()) {
+            if (!CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).contains(entry.getKey())) {
+                continue;
+            }
+
+            ICurioStacksHandler handler = entry.getValue();
+            for (int slot = 0; slot < handler.getSlots(); slot++) {
+                try {
+                    if (handler.getStacks().getStackInSlot(slot).isEmpty()) {
+                        ItemStack cleanStack = stack.copy();
+                        cleanStack.remove(CuriosSlotDataComponent.CURIO_SLOT_DATA.get());
+                        handler.getStacks().setStackInSlot(slot, cleanStack);
+                        return true;
+                    }
+                } catch (IndexOutOfBoundsException ignored) {
+
                 }
             }
         }
+
+        return false;
     }
 
     @Unique
@@ -107,9 +158,14 @@ public abstract class GraveStoneBlockMixin {
 
     @Unique
     private void transferInventory(NonNullList<ItemStack> source, NonNullList<ItemStack> destination, NonNullList<ItemStack> overflow) {
-        for (int i = 0; i < source.size(); i++) {
+        for (int i = 0; i < source.size() && i < destination.size(); i++) {
             ItemStack stack = source.get(i);
             if (!stack.isEmpty()) {
+                CuriosSlotDataComponent.CurioSlotData slotData = stack.get(CuriosSlotDataComponent.CURIO_SLOT_DATA.get());
+                if (slotData != null && slotData.wasEquipped()) {
+                    continue;
+                }
+
                 ItemStack currentStack = destination.get(i);
                 if (!currentStack.isEmpty()) {
                     overflow.add(currentStack);
