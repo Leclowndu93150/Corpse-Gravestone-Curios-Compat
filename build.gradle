@@ -116,11 +116,14 @@ configurations {
 
 dependencies {
     implementation "curse.maven:corpse-316582:5816706"
-    implementation "curse.maven:curios-continuation-1037991:5888964"
+    implementation "curse.maven:curios-309927:6529130"
     implementation "curse.maven:baguettelib-1264423:6523363"
     runtimeOnly "curse.maven:artifacts-312353:5624722"
     runtimeOnly "curse.maven:cloth-config-348521:5729127"
     runtimeOnly "curse.maven:architectury-api-419699:5786327"
+
+    runtimeOnly "curse.maven:malum-484064:6655805"
+    runtimeOnly "curse.maven:lodestone-616457:6630047"
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.

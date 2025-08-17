@@ -3,7 +3,8 @@
   "package": "com.leclowndu93150.corpsecurioscompat.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
-    "CorpseContainerMixin"
+    "CorpseContainerMixin",
+    "CurioStacksHandlerMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -1,4 +1,4 @@
-package com.leclowndu93150.corpsecurioscompat;
+package com.leclowndu93150.corpsecurioscompat.data;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -9,6 +9,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.minecraft.core.registries.Registries;
+import com.leclowndu93150.corpsecurioscompat.Main;
 
 public class CuriosSlotDataComponent {
     public static final DeferredRegister<DataComponentType<?>> DATA_COMPONENTS =

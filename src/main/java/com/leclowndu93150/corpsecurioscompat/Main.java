@@ -1,5 +1,6 @@
 package com.leclowndu93150.corpsecurioscompat;
 
+import com.leclowndu93150.corpsecurioscompat.data.CuriosSlotDataComponent;
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
