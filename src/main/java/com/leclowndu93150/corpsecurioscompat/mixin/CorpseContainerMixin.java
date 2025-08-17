@@ -121,7 +121,6 @@ public abstract class CorpseContainerMixin {
         }
 
         long currentTime = System.currentTimeMillis();
-        System.out.println("[CorpseContainer] Time: " + currentTime + " - Processing " + priorityItems.size() + " priority items (slot-adding)");
         // Process priority items immediately (they're already copies)
         for (int i = 0; i < priorityItems.size(); i++) {
             ItemStack stack = priorityItems.get(i);
@@ -130,7 +129,6 @@ public abstract class CorpseContainerMixin {
             }
         }
 
-        System.out.println("[CorpseContainer] Time: " + currentTime + " - Processing " + regularItems.size() + " regular items");
         if (!regularItems.isEmpty() && !priorityItems.isEmpty()) {
             // IMPORTANT: Remove items from corpse BEFORE transferItems runs
             // This prevents them from going to inventory
@@ -167,8 +165,8 @@ public abstract class CorpseContainerMixin {
         if (Config.isItemBlacklisted(stack.getItem())) {
             return false;
         }
-        
-        return true;
+
+        return Config.shouldTransferCursedItems() || !Config.isItemCursed(stack);
     }
 
     @Unique
@@ -185,6 +183,11 @@ public abstract class CorpseContainerMixin {
         }
 
         if (Config.isItemBlacklisted(stack.getItem())) {
+            return false;
+        }
+        
+        // Check if cursed items should be transferred
+        if (!Config.shouldTransferCursedItems() && Config.isItemCursed(stack)) {
             return false;
         }
 
@@ -235,6 +238,10 @@ public abstract class CorpseContainerMixin {
     private boolean corpse_Curios_Compat$tryFindAlternativeSlot(ItemStack stack, Map<String, ICurioStacksHandler> curios) {
         CuriosSlotDataComponent.CurioSlotData slotData = stack.get(CuriosSlotDataComponent.CURIO_SLOT_DATA.get());
         if (slotData == null || !slotData.wasEquipped()) {
+            return false;
+        }
+
+        if (!Config.shouldTransferCursedItems() && Config.isItemCursed(stack)) {
             return false;
         }
 
