@@ -147,7 +147,10 @@ dependencies {
 
     implementation fg.deobf("curse.maven:corpse-316582:6121243")
     implementation fg.deobf("curse.maven:curios-309927:6418456")
-    implementation fg.deobf(files("libs/baguettelib-1.20.1-Forge-1.0.0.jar"))
+    implementation fg.deobf("curse.maven:baguettelib-1264423:6523425")
+
+    runtimeOnly fg.deobf("curse.maven:lodestone-616457:6213794")
+    runtimeOnly fg.deobf("curse.maven:malum-484064:6646111")
 
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 
