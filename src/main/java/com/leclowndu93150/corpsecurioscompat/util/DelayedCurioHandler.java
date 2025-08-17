@@ -1,8 +1,7 @@
-package com.leclowndu93150.corpsecurioscompat;
+package com.leclowndu93150.corpsecurioscompat.util;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.TickTask;
+import com.leclowndu93150.corpsecurioscompat.data.CuriosSlotDataComponent;
+import com.leclowndu93150.corpsecurioscompat.duck.ICuriosAccessor;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import top.theillusivec4.curios.api.CuriosApi;
@@ -12,6 +11,7 @@ import java.util.*;
 
 public class DelayedCurioHandler {
     private static final Map<UUID, List<ItemStack>> pendingItems = new HashMap<>();
+    private static final Map<UUID, Long> scheduledTimes = new HashMap<>();
     
     /**
      * Stores items to be processed after a delay for a specific player
@@ -21,13 +21,27 @@ public class DelayedCurioHandler {
         
         UUID playerId = player.getUUID();
         pendingItems.put(playerId, new ArrayList<>(items));
-
-        MinecraftServer server = player.level().getServer();
-
-        // Wait 5 ticks to ensure Curios has fully processed slot additions
-        server.tell(new TickTask(server.getTickCount() + 5,
-            () -> processPendingItems(player)
-        ));
+        
+        long currentTime = System.currentTimeMillis();
+        long executeTime = currentTime + 50; // 1 tick (50 ms) delay
+        scheduledTimes.put(playerId, executeTime);
+    }
+    
+    /**
+     * Tick handler for a specific player
+     */
+    public static void tickForPlayer(Player player) {
+        UUID playerId = player.getUUID();
+        Long scheduledTime = scheduledTimes.get(playerId);
+        
+        if (scheduledTime == null) return;
+        
+        long currentTime = System.currentTimeMillis();
+        
+        if (currentTime >= scheduledTime) {
+            processPendingItems(player);
+            scheduledTimes.remove(playerId);
+        }
     }
     
     /**
@@ -38,6 +52,8 @@ public class DelayedCurioHandler {
         List<ItemStack> items = pendingItems.remove(playerId);
         
         if (items == null || items.isEmpty()) return;
+        
+        long currentTime = System.currentTimeMillis();
         
         CuriosApi.getCuriosInventory(player).ifPresent(handler -> {
             Map<String, ICurioStacksHandler> curios = handler.getCurios();
@@ -69,12 +85,12 @@ public class DelayedCurioHandler {
         
         String slotType = slotData.slotType();
         int slotIndex = slotData.slotIndex();
-
         ICurioStacksHandler handler = curios.get(slotType);
         if (handler != null && slotIndex >= 0) {
             var targetStacks = slotData.isCosmetic() ? handler.getCosmeticStacks() : handler.getStacks();
-            
-            if (slotIndex < targetStacks.getSlots()) {
+            int availableSlots = targetStacks.getSlots();
+
+            if (slotIndex < availableSlots) {
                 ItemStack existingStack = targetStacks.getStackInSlot(slotIndex);
                 
                 if (existingStack.isEmpty()) {
@@ -121,5 +137,28 @@ public class DelayedCurioHandler {
         }
         
         return false;
+    }
+    
+    /**
+     * Cleanup pending items for a player (e.g., on logout)
+     */
+    public static void cleanupPlayer(Player player) {
+        UUID playerId = player.getUUID();
+        List<ItemStack> items = pendingItems.remove(playerId);
+        scheduledTimes.remove(playerId);
+
+        if (items != null && !items.isEmpty()) {
+
+            for (ItemStack stack : items) {
+                if (!stack.isEmpty()) {
+                    ItemStack cleanStack = stack.copy();
+                    cleanStack.remove(CuriosSlotDataComponent.CURIO_SLOT_DATA.get());
+
+                    if (!player.getInventory().add(cleanStack)) {
+                        player.drop(cleanStack, false);
+                    }
+                }
+            }
+        }
     }
 }

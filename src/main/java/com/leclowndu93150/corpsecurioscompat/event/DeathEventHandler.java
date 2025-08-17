@@ -1,6 +1,7 @@
-package com.leclowndu93150.corpsecurioscompat;
+package com.leclowndu93150.corpsecurioscompat.event;
 
 import com.leclowndu93150.baguettelib.event.entity.death.PlayerDeathEvent;
+import com.leclowndu93150.corpsecurioscompat.data.CuriosSlotDataComponent;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.EventPriority;

@@ -1,9 +1,9 @@
 package com.leclowndu93150.corpsecurioscompat.mixin;
 
 import com.leclowndu93150.corpsecurioscompat.Config;
-import com.leclowndu93150.corpsecurioscompat.CuriosSlotDataComponent;
-import com.leclowndu93150.corpsecurioscompat.CuriosSlotDetector;
-import com.leclowndu93150.corpsecurioscompat.DelayedCurioHandler;
+import com.leclowndu93150.corpsecurioscompat.data.CuriosSlotDataComponent;
+import com.leclowndu93150.corpsecurioscompat.util.CuriosSlotDetector;
+import com.leclowndu93150.corpsecurioscompat.util.DelayedCurioHandler;
 import de.maxhenkel.corpse.entities.CorpseEntity;
 import de.maxhenkel.corpse.gui.CorpseAdditionalContainer;
 import de.maxhenkel.corpse.gui.CorpseContainerBase;
@@ -71,7 +71,7 @@ public abstract class CorpseContainerMixin {
 
                 ItemStack stack = slot.getItem();
                 if (!stack.isEmpty() && corpse_Curios_Compat$shouldTransferCurio(stack)) {
-                    curioItems.add(stack);
+                    curioItems.add(stack.copy()); // Add a copy to preserve the item
                     final int slotIndex = i;
                     clearActions.add(s -> corpseContainer.getSlot(slotIndex).set(ItemStack.EMPTY));
                 }
@@ -80,7 +80,7 @@ public abstract class CorpseContainerMixin {
             for (int i = 0; i < corpseContainer.getCorpse().getDeath().getAdditionalItems().size(); i++) {
                 ItemStack stack = corpseContainer.getCorpse().getDeath().getAdditionalItems().get(i);
                 if (!stack.isEmpty() && corpse_Curios_Compat$shouldTransferCurio(stack)) {
-                    curioItems.add(stack);
+                    curioItems.add(stack.copy()); // Add a copy to preserve the item
                     final int index = i;
                     clearActions.add(s -> corpseContainer.getCorpse().getDeath().getAdditionalItems().set(index, ItemStack.EMPTY));
                 }
@@ -94,7 +94,7 @@ public abstract class CorpseContainerMixin {
 
                 ItemStack stack = slot.getItem();
                 if (!stack.isEmpty() && corpse_Curios_Compat$shouldTransferCurio(stack)) {
-                    curioItems.add(stack);
+                    curioItems.add(stack.copy()); // Add a copy to preserve the item
                     final int slotIndex = i;
                     clearActions.add(s -> additionalContainer.getSlot(slotIndex).set(ItemStack.EMPTY));
                 }
@@ -120,6 +120,9 @@ public abstract class CorpseContainerMixin {
             }
         }
 
+        long currentTime = System.currentTimeMillis();
+        System.out.println("[CorpseContainer] Time: " + currentTime + " - Processing " + priorityItems.size() + " priority items (slot-adding)");
+        // Process priority items immediately (they're already copies)
         for (int i = 0; i < priorityItems.size(); i++) {
             ItemStack stack = priorityItems.get(i);
             if (corpse_Curios_Compat$tryTransferPreviouslyEquippedCurio(stack, curios)) {
@@ -127,11 +130,14 @@ public abstract class CorpseContainerMixin {
             }
         }
 
+        System.out.println("[CorpseContainer] Time: " + currentTime + " - Processing " + regularItems.size() + " regular items");
         if (!regularItems.isEmpty() && !priorityItems.isEmpty()) {
-            // Schedule regular items for next tick through our handler
-            // First, remove them from the corpse so they don't go to inventory
+            // IMPORTANT: Remove items from corpse BEFORE transferItems runs
+            // This prevents them from going to inventory
             for (int i = 0; i < regularItems.size(); i++) {
-                regularClearActions.get(i).accept(regularItems.get(i));
+                ItemStack itemCopy = regularItems.get(i).copy(); // Make a copy before clearing
+                regularClearActions.get(i).accept(regularItems.get(i)); // Clear from corpse
+                regularItems.set(i, itemCopy); // Use the copy for delayed restoration
             }
 
             DelayedCurioHandler.scheduleCurioRestoration(cachedPlayer, regularItems);
@@ -189,8 +195,9 @@ public abstract class CorpseContainerMixin {
         if (handler != null && slotIndex >= 0) {
             try {
                 var targetStacks = slotData.isCosmetic() ? handler.getCosmeticStacks() : handler.getStacks();
-                
-                if (slotIndex < targetStacks.getSlots()) {
+                int availableSlots = targetStacks.getSlots();
+
+                if (slotIndex < availableSlots) {
                     ItemStack existingStack = targetStacks.getStackInSlot(slotIndex);
 
                     if (existingStack.isEmpty()) {
