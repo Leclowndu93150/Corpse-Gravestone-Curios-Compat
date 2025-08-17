@@ -34,7 +34,7 @@ public class DeathEventHandler {
             for (int i = 0; i < stackHandler.getSlots(); i++) {
                 ItemStack stack = stackHandler.getStacks().getStackInSlot(i);
                 if (!stack.isEmpty()) {
-                    setSlotData(stack, slotType, i, true);
+                    setSlotData(stack, slotType, i, true, false);
                 }
             }
 
@@ -42,15 +42,15 @@ public class DeathEventHandler {
             for (int i = 0; i < stackHandler.getCosmeticStacks().getSlots(); i++) {
                 ItemStack stack = stackHandler.getCosmeticStacks().getStackInSlot(i);
                 if (!stack.isEmpty()) {
-                    setSlotData(stack, slotType, i, true);
+                    setSlotData(stack, slotType, i, true, true);
                 }
             }
         }
     }
 
-    private static void setSlotData(ItemStack stack, String slotType, int slotIndex, boolean wasEquipped) {
+    private static void setSlotData(ItemStack stack, String slotType, int slotIndex, boolean wasEquipped, boolean isCosmetic) {
         CuriosSlotDataComponent.CurioSlotData slotData =
-                new CuriosSlotDataComponent.CurioSlotData(slotType, slotIndex, wasEquipped);
+                new CuriosSlotDataComponent.CurioSlotData(slotType, slotIndex, wasEquipped, isCosmetic);
         stack.set(CuriosSlotDataComponent.CURIO_SLOT_DATA.get(), slotData);
     }
 }

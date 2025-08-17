@@ -108,30 +108,36 @@ public abstract class CorpseContainerMixin {
         int slotIndex = slotData.slotIndex();
 
         ICurioStacksHandler handler = curios.get(slotType);
-        if (handler != null && slotIndex >= 0 && slotIndex < handler.getSlots()) {
+        if (handler != null && slotIndex >= 0) {
             try {
-                ItemStack existingStack = handler.getStacks().getStackInSlot(slotIndex);
+                // Determine which stacks handler to use based on whether it's cosmetic
+                var targetStacks = slotData.isCosmetic() ? handler.getCosmeticStacks() : handler.getStacks();
+                
+                if (slotIndex < targetStacks.getSlots()) {
+                    ItemStack existingStack = targetStacks.getStackInSlot(slotIndex);
 
-                if (existingStack.isEmpty()) {
-                    ItemStack cleanStack = stack.copy();
-                    cleanStack.remove(CuriosSlotDataComponent.CURIO_SLOT_DATA.get());
-                    handler.getStacks().setStackInSlot(slotIndex, cleanStack);
-                    return true;
-                }
+                    if (existingStack.isEmpty()) {
+                        ItemStack cleanStack = stack.copy();
+                        cleanStack.remove(CuriosSlotDataComponent.CURIO_SLOT_DATA.get());
+                        targetStacks.setStackInSlot(slotIndex, cleanStack);
+                        return true;
+                    }
 
-                CuriosSlotDataComponent.CurioSlotData existingSlotData =
-                        existingStack.get(CuriosSlotDataComponent.CURIO_SLOT_DATA.get());
-                if (existingSlotData != null &&
-                        (!slotType.equals(existingSlotData.slotType()) || slotIndex != existingSlotData.slotIndex())) {
+                    CuriosSlotDataComponent.CurioSlotData existingSlotData =
+                            existingStack.get(CuriosSlotDataComponent.CURIO_SLOT_DATA.get());
+                    if (existingSlotData != null &&
+                            (!slotType.equals(existingSlotData.slotType()) || slotIndex != existingSlotData.slotIndex() || 
+                             slotData.isCosmetic() != existingSlotData.isCosmetic())) {
 
-                    handler.getStacks().setStackInSlot(slotIndex, ItemStack.EMPTY);
+                        targetStacks.setStackInSlot(slotIndex, ItemStack.EMPTY);
 
-                    ItemStack cleanStack = stack.copy();
-                    cleanStack.remove(CuriosSlotDataComponent.CURIO_SLOT_DATA.get());
-                    handler.getStacks().setStackInSlot(slotIndex, cleanStack);
+                        ItemStack cleanStack = stack.copy();
+                        cleanStack.remove(CuriosSlotDataComponent.CURIO_SLOT_DATA.get());
+                        targetStacks.setStackInSlot(slotIndex, cleanStack);
 
-                    tryFindAlternativeSlot(existingStack, curios);
-                    return true;
+                        tryFindAlternativeSlot(existingStack, curios);
+                        return true;
+                    }
                 }
             } catch (IndexOutOfBoundsException e) {
                 return tryFindAlternativeSlot(stack, curios);
@@ -153,15 +159,23 @@ public abstract class CorpseContainerMixin {
             }
 
             ICurioStacksHandler handler = entry.getValue();
-            for (int slot = 0; slot < handler.getSlots(); slot++) {
-                try {
-                    if (handler.getStacks().getStackInSlot(slot).isEmpty()) {
-                        ItemStack cleanStack = stack.copy();
-                        cleanStack.remove(CuriosSlotDataComponent.CURIO_SLOT_DATA.get());
-                        handler.getStacks().setStackInSlot(slot, cleanStack);
-                        return true;
+            // Try preferred slots first (cosmetic if item was cosmetic, regular otherwise)
+            for (int pass = 0; pass < 2; pass++) {
+                var stacks = (pass == 0) ? 
+                    (slotData.isCosmetic() ? handler.getCosmeticStacks() : handler.getStacks()) :
+                    (slotData.isCosmetic() ? handler.getStacks() : handler.getCosmeticStacks());
+                    
+                for (int slot = 0; slot < stacks.getSlots(); slot++) {
+                    try {
+                        if (stacks.getStackInSlot(slot).isEmpty()) {
+                            ItemStack cleanStack = stack.copy();
+                            cleanStack.remove(CuriosSlotDataComponent.CURIO_SLOT_DATA.get());
+                            stacks.setStackInSlot(slot, cleanStack);
+                            return true;
+                        }
+                    } catch (IndexOutOfBoundsException e) {
+                        System.err.println("CorpseCuriosCompat: Index out of bounds while trying to transfer curio stack: " + e.getMessage());
                     }
-                } catch (IndexOutOfBoundsException e) {
                 }
             }
         }
