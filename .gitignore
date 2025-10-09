@@ -117,5 +117,7 @@ runs/
 
 .claude
 
+Curios-1.20.x
+
 # Avoid ignoring Gradle wrapper jar file (.jar files are usually ignored)
 !gradle-wrapper.jar

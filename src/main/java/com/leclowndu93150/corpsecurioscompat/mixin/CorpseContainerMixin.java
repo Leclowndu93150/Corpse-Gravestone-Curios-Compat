@@ -201,12 +201,7 @@ public abstract class CorpseContainerMixin {
                 if (slotIndex < availableSlots) {
                     ItemStack existingStack = targetStacks.getStackInSlot(slotIndex);
 
-                    if (existingStack.isEmpty()) {
-                        ItemStack cleanStack = stack.copy();
-                        CuriosSlotDataComponent.removeCurioSlotData(cleanStack);
-                        targetStacks.setStackInSlot(slotIndex, cleanStack);
-                        return true;
-                    } else {
+                    if (!existingStack.isEmpty()) {
                         ItemStack cleanStack = stack.copy();
                         CuriosSlotDataComponent.removeCurioSlotData(cleanStack);
                         if (!cachedPlayer.getInventory().add(cleanStack)) {
@@ -214,53 +209,27 @@ public abstract class CorpseContainerMixin {
                         }
                         return true;
                     }
+
+                    ItemStack cleanStack = stack.copy();
+                    CuriosSlotDataComponent.removeCurioSlotData(cleanStack);
+                    targetStacks.setStackInSlot(slotIndex, cleanStack);
+                    return true;
                 }
             } catch (IndexOutOfBoundsException e) {
-                return corpse_Curios_Compat$tryFindAlternativeSlot(stack, curios);
-            }
-        }
-
-        return corpse_Curios_Compat$tryFindAlternativeSlot(stack, curios);
-    }
-
-    @Unique
-    private boolean corpse_Curios_Compat$tryFindAlternativeSlot(ItemStack stack, Map<String, ICurioStacksHandler> curios) {
-        CuriosSlotDataComponent.CurioSlotData slotData = CuriosSlotDataComponent.getCurioSlotData(stack);
-        if (slotData == null || !slotData.wasEquipped()) {
-            return false;
-        }
-
-        if (!Config.shouldTransferCursedItems() && Config.isItemCursed(stack)) {
-            return false;
-        }
-
-        for (Map.Entry<String, ICurioStacksHandler> entry : curios.entrySet()) {
-            if (!CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).contains(entry.getKey())) {
-                continue;
-            }
-
-            ICurioStacksHandler handler = entry.getValue();
-            // Try preferred slots first (cosmetic if item was cosmetic, regular otherwise)
-            for (int pass = 0; pass < 2; pass++) {
-                var stacks = (pass == 0) ? 
-                    (slotData.isCosmetic() ? handler.getCosmeticStacks() : handler.getStacks()) :
-                    (slotData.isCosmetic() ? handler.getStacks() : handler.getCosmeticStacks());
-                    
-                for (int slot = 0; slot < stacks.getSlots(); slot++) {
-                    try {
-                        if (stacks.getStackInSlot(slot).isEmpty()) {
-                            ItemStack cleanStack = stack.copy();
-                            CuriosSlotDataComponent.removeCurioSlotData(cleanStack);
-                            stacks.setStackInSlot(slot, cleanStack);
-                            return true;
-                        }
-                    } catch (IndexOutOfBoundsException e) {
-                        // Ignore and continue
-                    }
+                ItemStack cleanStack = stack.copy();
+                CuriosSlotDataComponent.removeCurioSlotData(cleanStack);
+                if (!cachedPlayer.getInventory().add(cleanStack)) {
+                    cachedPlayer.drop(cleanStack, false);
                 }
+                return true;
             }
         }
 
-        return false;
+        ItemStack cleanStack = stack.copy();
+        CuriosSlotDataComponent.removeCurioSlotData(cleanStack);
+        if (!cachedPlayer.getInventory().add(cleanStack)) {
+            cachedPlayer.drop(cleanStack, false);
+        }
+        return true;
     }
 }
