@@ -102,43 +102,9 @@ public class DelayedCurioHandler {
             }
         }
 
-        return tryFindAlternativeSlot(stack, curios);
-    }
-    
-    private static boolean tryFindAlternativeSlot(ItemStack stack, Map<String, ICurioStacksHandler> curios) {
-        CuriosSlotDataComponent.CurioSlotData slotData = stack.get(CuriosSlotDataComponent.CURIO_SLOT_DATA.get());
-        if (slotData == null) return false;
-        
-        for (Map.Entry<String, ICurioStacksHandler> entry : curios.entrySet()) {
-            if (!CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).contains(entry.getKey())) {
-                continue;
-            }
-            
-            ICurioStacksHandler handler = entry.getValue();
-            // Try preferred slots first (cosmetic if item was cosmetic, regular otherwise)
-            for (int pass = 0; pass < 2; pass++) {
-                var stacks = (pass == 0) ? 
-                    (slotData.isCosmetic() ? handler.getCosmeticStacks() : handler.getStacks()) :
-                    (slotData.isCosmetic() ? handler.getStacks() : handler.getCosmeticStacks());
-                    
-                for (int slot = 0; slot < stacks.getSlots(); slot++) {
-                    try {
-                        if (stacks.getStackInSlot(slot).isEmpty()) {
-                            ItemStack cleanStack = stack.copy();
-                            cleanStack.remove(CuriosSlotDataComponent.CURIO_SLOT_DATA.get());
-                            stacks.setStackInSlot(slot, cleanStack);
-                            return true;
-                        }
-                    } catch (IndexOutOfBoundsException e) {
-                        // Ignore and continue
-                    }
-                }
-            }
-        }
-        
         return false;
     }
-    
+
     /**
      * Cleanup pending items for a player (e.g., on logout)
      */
