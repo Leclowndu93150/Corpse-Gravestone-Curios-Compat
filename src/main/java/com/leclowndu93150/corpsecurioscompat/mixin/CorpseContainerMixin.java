@@ -206,22 +206,13 @@ public abstract class CorpseContainerMixin {
                         CuriosSlotDataComponent.removeCurioSlotData(cleanStack);
                         targetStacks.setStackInSlot(slotIndex, cleanStack);
                         return true;
-                    }
-
-                    CuriosSlotDataComponent.CurioSlotData existingSlotData = CuriosSlotDataComponent.getCurioSlotData(existingStack);
-                    if (existingSlotData != null) {
-                        if (!slotType.equals(existingSlotData.slotType()) ||
-                                slotIndex != existingSlotData.slotIndex()) {
-
-                            targetStacks.setStackInSlot(slotIndex, ItemStack.EMPTY);
-
-                            ItemStack cleanStack = stack.copy();
-                            CuriosSlotDataComponent.removeCurioSlotData(cleanStack);
-                            targetStacks.setStackInSlot(slotIndex, cleanStack);
-
-                            corpse_Curios_Compat$tryFindAlternativeSlot(existingStack, curios);
-                            return true;
+                    } else {
+                        ItemStack cleanStack = stack.copy();
+                        CuriosSlotDataComponent.removeCurioSlotData(cleanStack);
+                        if (!cachedPlayer.getInventory().add(cleanStack)) {
+                            cachedPlayer.drop(cleanStack, false);
                         }
+                        return true;
                     }
                 }
             } catch (IndexOutOfBoundsException e) {
