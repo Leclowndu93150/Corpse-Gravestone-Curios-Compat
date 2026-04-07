@@ -10,7 +10,6 @@ import net.minecraftforge.fml.common.Mod;
 import top.theillusivec4.curios.api.CuriosApi;
 import top.theillusivec4.curios.api.type.capability.ICuriosItemHandler;
 import top.theillusivec4.curios.api.type.inventory.ICurioStacksHandler;
-
 import net.minecraft.world.level.GameRules;
 import top.theillusivec4.curios.common.CuriosConfig;
 
@@ -25,9 +24,7 @@ public class DeathEventHandler {
         if (areCuriosKept(player)) return;
 
         var curioHandlerOptional = CuriosApi.getCuriosHelper().getCuriosHandler(player);
-        if (!curioHandlerOptional.isPresent()) {
-            return;
-        }
+        if (!curioHandlerOptional.isPresent()) return;
 
         ICuriosItemHandler handler = curioHandlerOptional.resolve().get();
         Map<String, ICurioStacksHandler> curios = handler.getCurios();
@@ -36,7 +33,6 @@ public class DeathEventHandler {
             String slotType = entry.getKey();
             ICurioStacksHandler stackHandler = entry.getValue();
 
-            // Tag regular curio items
             for (int i = 0; i < stackHandler.getSlots(); i++) {
                 ItemStack stack = stackHandler.getStacks().getStackInSlot(i);
                 if (!stack.isEmpty()) {
@@ -44,7 +40,6 @@ public class DeathEventHandler {
                 }
             }
 
-            // Tag cosmetic curio items
             for (int i = 0; i < stackHandler.getCosmeticStacks().getSlots(); i++) {
                 ItemStack stack = stackHandler.getCosmeticStacks().getStackInSlot(i);
                 if (!stack.isEmpty()) {

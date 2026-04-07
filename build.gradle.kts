@@ -63,6 +63,7 @@ prism {
                     implementation("curse.maven:curios-309927:6529130")
                     implementation("curse.maven:baguettelib-1264423:7880467")
                     runtimeOnly("curse.maven:artifacts-312353:7875426")
+                    runtimeOnly("curse.maven:cloth-config-348521:5729127")
                 }
             }
         }
@@ -75,6 +76,8 @@ prism {
                     modImplementation("curse.maven:curios-309927:6418456")
                     modImplementation("curse.maven:baguettelib-1264423:7544807")
                     modRuntimeOnly("curse.maven:artifacts-312353:7880372")
+                    modRuntimeOnly("curse.maven:cloth-config-348521:5729105")
+                    modRuntimeOnly("curse.maven:architectury-api-419699:5137938")
                 }
             }
         }
@@ -143,6 +146,7 @@ prism {
                     implementation("curse.maven:curios-309927:6529130")
                     implementation("curse.maven:baguettelib-1264423:7880467")
                     runtimeOnly("curse.maven:artifacts-312353:7875426")
+                    runtimeOnly("curse.maven:cloth-config-348521:5729127")
                 }
             }
         }
@@ -155,6 +159,8 @@ prism {
                     modImplementation("curse.maven:curios-309927:6418456")
                     modImplementation("curse.maven:baguettelib-1264423:7544807")
                     modRuntimeOnly("curse.maven:artifacts-312353:7880372")
+                    modRuntimeOnly("curse.maven:cloth-config-348521:5729105")
+                    modRuntimeOnly("curse.maven:architectury-api-419699:5137938")
                 }
             }
         }

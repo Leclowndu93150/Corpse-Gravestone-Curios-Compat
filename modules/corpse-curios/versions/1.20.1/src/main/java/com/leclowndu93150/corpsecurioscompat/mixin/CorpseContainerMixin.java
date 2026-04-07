@@ -42,18 +42,12 @@ public abstract class CorpseContainerMixin {
     @Inject(method = "transferItems", at = @At("HEAD"), remap = false)
     private void transferItemsToCurios(CallbackInfo ci) {
         Object container = this;
-        if (cachedPlayer == null || !cachedPlayer.isAlive()) {
-            return;
-        }
+        if (cachedPlayer == null || !cachedPlayer.isAlive()) return;
 
-        if(!((CorpseContainerBase) container).isEditable()) {
-            return;
-        }
+        if (!((CorpseContainerBase) container).isEditable()) return;
 
         Optional<ICuriosItemHandler> curiosOpt = CuriosApi.getCuriosHelper().getCuriosHandler(cachedPlayer).resolve();
-        if (curiosOpt.isEmpty()) {
-            return;
-        }
+        if (curiosOpt.isEmpty()) return;
 
         ICuriosItemHandler curiosHandler = curiosOpt.get();
         Map<String, ICurioStacksHandler> curios = curiosHandler.getCurios();
@@ -102,16 +96,15 @@ public abstract class CorpseContainerMixin {
             }
         }
 
-        // Separate items into priority (slot-adding) and regular items
         List<ItemStack> priorityItems = new ArrayList<>();
         List<Consumer<ItemStack>> priorityClearActions = new ArrayList<>();
         List<ItemStack> regularItems = new ArrayList<>();
         List<Consumer<ItemStack>> regularClearActions = new ArrayList<>();
-        
+
         for (int i = 0; i < curioItems.size(); i++) {
             ItemStack stack = curioItems.get(i);
             CuriosSlotDataComponent.CurioSlotData slotData = CuriosSlotDataComponent.getCurioSlotData(stack);
-            
+
             if (slotData != null && CuriosSlotDetector.doesItemAddSlots(stack, cachedPlayer, slotData.slotType())) {
                 priorityItems.add(stack);
                 priorityClearActions.add(clearActions.get(i));
@@ -121,7 +114,6 @@ public abstract class CorpseContainerMixin {
             }
         }
 
-        // Process priority items immediately
         for (int i = 0; i < priorityItems.size(); i++) {
             ItemStack stack = priorityItems.get(i);
             if (corpse_Curios_Compat$tryTransferPreviouslyEquippedCurio(stack, curios)) {
@@ -130,7 +122,6 @@ public abstract class CorpseContainerMixin {
         }
 
         if (!regularItems.isEmpty() && !priorityItems.isEmpty()) {
-            // Remove items from corpse BEFORE transferItems runs
             for (int i = 0; i < regularItems.size(); i++) {
                 ItemStack itemCopy = regularItems.get(i).copy();
                 regularClearActions.get(i).accept(regularItems.get(i));
@@ -151,19 +142,13 @@ public abstract class CorpseContainerMixin {
     @Unique
     private boolean corpse_Curios_Compat$shouldTransferCurio(ItemStack stack) {
         if (stack.isEmpty()) return false;
-        
-        if (CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).isEmpty()) {
-            return false;
-        }
-        
+
+        if (CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).isEmpty()) return false;
+
         CuriosSlotDataComponent.CurioSlotData slotData = CuriosSlotDataComponent.getCurioSlotData(stack);
-        if (slotData == null || !slotData.wasEquipped()) {
-            return false;
-        }
-        
-        if (Config.isItemBlacklisted(stack.getItem())) {
-            return false;
-        }
+        if (slotData == null || !slotData.wasEquipped()) return false;
+
+        if (Config.isItemBlacklisted(stack.getItem())) return false;
 
         return Config.shouldTransferCursedItems() || !Config.isItemCursed(stack);
     }
@@ -172,22 +157,14 @@ public abstract class CorpseContainerMixin {
     private boolean corpse_Curios_Compat$tryTransferPreviouslyEquippedCurio(ItemStack stack, Map<String, ICurioStacksHandler> curios) {
         if (stack.isEmpty()) return false;
 
-        if (CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).isEmpty()) {
-            return false;
-        }
+        if (CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).isEmpty()) return false;
 
         CuriosSlotDataComponent.CurioSlotData slotData = CuriosSlotDataComponent.getCurioSlotData(stack);
-        if (slotData == null || !slotData.wasEquipped()) {
-            return false;
-        }
+        if (slotData == null || !slotData.wasEquipped()) return false;
 
-        if (Config.isItemBlacklisted(stack.getItem())) {
-            return false;
-        }
-        
-        if (!Config.shouldTransferCursedItems() && Config.isItemCursed(stack)) {
-            return false;
-        }
+        if (Config.isItemBlacklisted(stack.getItem())) return false;
+
+        if (!Config.shouldTransferCursedItems() && Config.isItemCursed(stack)) return false;
 
         String slotType = slotData.slotType();
         int slotIndex = slotData.slotIndex();
