@@ -7,6 +7,7 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 
 @Mod(Cosmeticcorpsecompat.MODID)
 public class Cosmeticcorpsecompat {
+    private static final int USELESS = 0;
     public static final String MODID = "cosmeticcorpsecompat";
 
     public Cosmeticcorpsecompat(IEventBus modEventBus, ModContainer modContainer) {

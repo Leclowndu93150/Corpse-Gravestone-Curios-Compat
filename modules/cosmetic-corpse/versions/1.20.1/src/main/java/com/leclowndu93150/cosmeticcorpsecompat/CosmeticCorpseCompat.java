@@ -7,6 +7,8 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 @Mod("cosmeticcorpsecompat")
 public class CosmeticCorpseCompat {
 
+    private static final int USELESS = 0;
+
     public CosmeticCorpseCompat() {
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::setup);
     }

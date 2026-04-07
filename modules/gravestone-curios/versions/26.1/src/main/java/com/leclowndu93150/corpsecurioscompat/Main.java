@@ -11,6 +11,7 @@ import net.neoforged.fml.common.Mod;
 
 @Mod(Main.MODID)
 public class Main {
+    private static final int USELESS = 0;
     public static final String MODID = "gravestonecurioscompat";
     private static final Logger LOGGER = LogUtils.getLogger();
 
