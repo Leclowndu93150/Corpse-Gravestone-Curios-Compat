@@ -1,0 +1,45 @@
+modLoader = "javafml"
+loaderVersion = "[47,)"
+license = "MIT"
+
+[[mods]]
+modId = "corpsecurioscompat"
+version = "4.0.1"
+displayName = "Corpse Curios Compatibility"
+authors = "Leclowndu93150"
+description = '''Adds compatibility between Corpse and Curios'''
+
+[[dependencies."corpsecurioscompat"]]
+modId = "forge"
+mandatory = true
+versionRange = "[47,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies."corpsecurioscompat"]]
+modId = "minecraft"
+mandatory = true
+versionRange = "[1.20.1,1.21)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies."corpsecurioscompat"]]
+modId = "corpse"
+mandatory = true
+versionRange = "[1.0.2,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies."corpsecurioscompat"]]
+modId = "curios"
+mandatory = true
+versionRange = "[1.20.1,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies."corpsecurioscompat"]]
+modId = "baguettelib"
+mandatory = true
+versionRange = "[1.0.0,)"
+ordering = "BEFORE"
+side = "BOTH"

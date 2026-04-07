@@ -18,7 +18,7 @@ prism {
             version = "4.0.1"
         }
         publishing {
-            type = STABLE
+            type = BETA
             changelog = """
                 
                  Fixes crash due to obfuscation issues, i'm sorry to all people who were affected
@@ -93,7 +93,7 @@ prism {
             version = "4.0.2"
         }
         publishing {
-            type = STABLE
+            type = BETA
             changelog = """
                 
                 Fixes crash due to obfuscation issues, i'm sorry to all people who were affected
@@ -176,7 +176,7 @@ prism {
             version = "1.0.0"
         }
         publishing {
-            type = STABLE
+            type = BETA
             changelog = """
                 Initial release
             """.trimIndent()
@@ -233,7 +233,7 @@ prism {
             version = "4.0.1"
         }
         publishing {
-            type = STABLE
+            type = BETA
             changelog = """
                 
                  Fixes crash due to obfuscation issues, i'm sorry to all people who were affected
