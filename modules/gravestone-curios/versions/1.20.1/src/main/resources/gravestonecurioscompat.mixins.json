@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "package": "com.leclowndu93150.corpsecurioscompat.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "mixins": [
+    "GraveStoneBlockMixin",
+    "CurioStacksHandlerMixin"
+  ],
+  "client": [],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

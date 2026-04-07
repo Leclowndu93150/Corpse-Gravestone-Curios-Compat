@@ -1,0 +1,22 @@
+{
+  "minecraft:recipes/decorations/crafting_table": {
+    "criteria": {
+      "unlock_right_away": "2026-04-06 17:32:34 +0200"
+    },
+    "done": true
+  },
+  "minecraft:adventure/adventuring_time": {
+    "criteria": {
+      "minecraft:beach": "2026-04-06 17:33:08 +0200",
+      "minecraft:jungle": "2026-04-06 17:33:03 +0200"
+    },
+    "done": false
+  },
+  "artifacts:amateur_archaeologist": {
+    "criteria": {
+      "find_artifact": "2026-04-06 17:45:38 +0200"
+    },
+    "done": true
+  },
+  "DataVersion": 3955
+}

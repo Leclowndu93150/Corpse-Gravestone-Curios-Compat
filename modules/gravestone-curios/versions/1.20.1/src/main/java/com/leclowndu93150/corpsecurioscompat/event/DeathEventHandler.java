@@ -1,0 +1,55 @@
+package com.leclowndu93150.corpsecurioscompat.event;
+
+import com.leclowndu93150.baguettelib.event.entity.death.PlayerDeathEvent;
+import com.leclowndu93150.corpsecurioscompat.data.CuriosSlotDataComponent;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.GameRules;
+import net.minecraftforge.eventbus.api.EventPriority;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import top.theillusivec4.curios.api.CuriosApi;
+import top.theillusivec4.curios.api.type.capability.ICuriosItemHandler;
+import top.theillusivec4.curios.api.type.inventory.ICurioStacksHandler;
+import top.theillusivec4.curios.common.CuriosConfig;
+
+import java.util.Map;
+
+@Mod.EventBusSubscriber(modid = "gravestonecurioscompat")
+public class DeathEventHandler {
+
+    @SubscribeEvent(priority = EventPriority.HIGH)
+    public static void onPlayerDeathPre(PlayerDeathEvent.Pre event) {
+        Player player = event.getPlayer();
+        if (areCuriosKept(player)) return;
+        CuriosApi.getCuriosInventory(player).ifPresent(handler -> {
+            Map<String, ICurioStacksHandler> curios = handler.getCurios();
+
+            for (Map.Entry<String, ICurioStacksHandler> entry : curios.entrySet()) {
+                String slotType = entry.getKey();
+                ICurioStacksHandler stackHandler = entry.getValue();
+
+                for (int i = 0; i < stackHandler.getSlots(); i++) {
+                    ItemStack stack = stackHandler.getStacks().getStackInSlot(i);
+                    if (!stack.isEmpty()) {
+                        CuriosSlotDataComponent.setCurioSlotData(stack, slotType, i, true, false);
+                    }
+                }
+
+                for (int i = 0; i < stackHandler.getCosmeticStacks().getSlots(); i++) {
+                    ItemStack stack = stackHandler.getCosmeticStacks().getStackInSlot(i);
+                    if (!stack.isEmpty()) {
+                        CuriosSlotDataComponent.setCurioSlotData(stack, slotType, i, true, true);
+                    }
+                }
+            }
+        });
+    }
+
+    private static boolean areCuriosKept(Player player) {
+        CuriosConfig.KeepCurios setting = CuriosConfig.SERVER.keepCurios.get();
+        if (setting == CuriosConfig.KeepCurios.ON) return true;
+        if (setting == CuriosConfig.KeepCurios.OFF) return false;
+        return player.level().getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY);
+    }
+}

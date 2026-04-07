@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="GradleMigrationSettings" migrationVersion="1" />
+  <component name="GradleSettings">
+    <option name="linkedExternalProjectsSettings">
+      <GradleProjectSettings>
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="gradleHome" value="" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/modules/corpse-curios" />
+            <option value="$PROJECT_DIR$/modules/corpse-curios/versions/1.20.1" />
+            <option value="$PROJECT_DIR$/modules/corpse-curios/versions/1.21.1" />
+            <option value="$PROJECT_DIR$/modules/corpse-curios/versions/26.1" />
+            <option value="$PROJECT_DIR$/modules/cosmetic-corpse" />
+            <option value="$PROJECT_DIR$/modules/cosmetic-corpse/versions/1.20.1" />
+            <option value="$PROJECT_DIR$/modules/cosmetic-corpse/versions/1.21.1" />
+            <option value="$PROJECT_DIR$/modules/gravestone-curios" />
+            <option value="$PROJECT_DIR$/modules/gravestone-curios/versions/1.20.1" />
+            <option value="$PROJECT_DIR$/modules/gravestone-curios/versions/1.21.1" />
+            <option value="$PROJECT_DIR$/modules/gravestone-curios/versions/26.1" />
+          </set>
+        </option>
+        <option name="resolveExternalAnnotations" value="true" />
+      </GradleProjectSettings>
+    </option>
+  </component>
+</project>

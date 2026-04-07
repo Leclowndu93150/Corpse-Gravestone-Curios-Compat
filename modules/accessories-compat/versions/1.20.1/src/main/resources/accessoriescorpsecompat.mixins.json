@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "package": "com.leclowndu93150.accessoriescompat.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "mixins": [
+    "CorpseContainerMixin",
+    "GraveStoneBlockMixin"
+  ],
+  "client": [],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
