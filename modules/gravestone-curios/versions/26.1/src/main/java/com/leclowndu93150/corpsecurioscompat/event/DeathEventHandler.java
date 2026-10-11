@@ -28,9 +28,12 @@ public class DeathEventHandler {
     }
 
     private static boolean areCuriosKept(Player player) {
-        CuriosConfig.KeepCurios setting = CuriosConfig.SERVER.keepCurios.get();
-        if (setting == CuriosConfig.KeepCurios.ON) return true;
-        if (setting == CuriosConfig.KeepCurios.OFF) return false;
+        try {
+            CuriosConfig.KeepCurios setting = CuriosConfig.SERVER.keepCurios.get();
+            if (setting == CuriosConfig.KeepCurios.ON) return true;
+            if (setting == CuriosConfig.KeepCurios.OFF) return false;
+        } catch (NoClassDefFoundError ignored) {
+        }
         return player.level().getServer().getGameRules().get(GameRules.KEEP_INVENTORY);
     }
 }

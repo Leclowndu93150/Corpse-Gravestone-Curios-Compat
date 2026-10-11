@@ -15,16 +15,13 @@ prism {
             description = "Adds compatibility between Corpse and Curios"
             license = "MIT"
             author("Leclowndu93150")
-            version = "4.0.2"
+            version = "4.1.0"
         }
         publishing {
             type = BETA
             changelog = """
-                
-                 Fixes crash due to obfuscation issues, i'm sorry to all people who were affected
-                
-                - Respects Curios keepCurios config setting (fixes item deletion when keepCurios = ON)
-                - 26.1 port
+                - Port to 26.2 and 26.3
+                - Fixed crash when CuriosConfig class is not found (fallback to keepInventory gamerule)
             """.trimIndent()
 
             curseforge {
@@ -40,6 +37,28 @@ prism {
                 requires("corpse")
                 requires("curios")
                 requires("baguettelib")
+            }
+        }
+        version("26.3") {
+            neoforge {
+                loaderVersion = "26.3.0.8-beta"
+                loaderVersionRange = "[4,)"
+                dependencies {
+                    implementation("curse.maven:corpse-316582:9027270")
+                    implementation("curse.maven:curios-309927:9127186")
+                    implementation("curse.maven:baguettelib-1264423:9134480")
+                }
+            }
+        }
+        version("26.2") {
+            neoforge {
+                loaderVersion = "26.2.0.1-beta"
+                loaderVersionRange = "[4,)"
+                dependencies {
+                    implementation("curse.maven:corpse-316582:8661336")
+                    implementation("curse.maven:curios-309927:8478313")
+                    implementation("curse.maven:baguettelib-1264423:8887468")
+                }
             }
         }
         version("26.1") {
@@ -91,24 +110,13 @@ prism {
             description = "Adds compatibility between Gravestone and Curios"
             license = "MIT"
             author("Leclowndu93150")
-            version = "4.0.2"
+            version = "4.1.0"
         }
         publishing {
             type = BETA
             changelog = """
-                
-                Fixes crash due to obfuscation issues, i'm sorry to all people who were affected
-                
-                Major rewrite of Gravestone Curios Compatibility:
-                - Per-item slot tracking: curios now restore to their exact original slot
-                - Cosmetic slot support: cosmetic curios are properly preserved and restored
-                - Slot-adding item priority: items that add curio slots are restored first
-                - Delayed restoration: prevents conflicts with slot initialization
-                - Curse of Binding support: configurable handling of cursed items
-                - Forced slot rebuild on restoration for accurate slot counts
-                - Respects Curios keepCurios config setting (fixes item deletion when keepCurios = ON)
-                - Player logout cleanup to prevent item loss
-                - Item blacklist configuration
+                - Port to 26.2 and 26.3
+                - Fixed crash when CuriosConfig class is not found (fallback to keepInventory gamerule)
             """.trimIndent()
 
             curseforge {
@@ -124,6 +132,28 @@ prism {
                 requires("gravestone-mod")
                 requires("curios")
                 requires("baguettelib")
+            }
+        }
+        version("26.3") {
+            neoforge {
+                loaderVersion = "26.3.0.8-beta"
+                loaderVersionRange = "[4,)"
+                dependencies {
+                    implementation("curse.maven:gravestone-mod-238551:9027231")
+                    implementation("curse.maven:curios-309927:9127186")
+                    implementation("curse.maven:baguettelib-1264423:9134480")
+                }
+            }
+        }
+        version("26.2") {
+            neoforge {
+                loaderVersion = "26.2.0.1-beta"
+                loaderVersionRange = "[4,)"
+                dependencies {
+                    implementation("curse.maven:gravestone-mod-238551:8671632")
+                    implementation("curse.maven:curios-309927:8478313")
+                    implementation("curse.maven:baguettelib-1264423:8887468")
+                }
             }
         }
         version("26.1") {

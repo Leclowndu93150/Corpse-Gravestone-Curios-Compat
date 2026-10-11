@@ -18,11 +18,15 @@ rootProject.name = "curioscompats"
 
 prism {
     mod("corpse-curios") {
+        version("26.3") { neoforge() }
+        version("26.2") { neoforge() }
         version("26.1") { neoforge() }
         version("1.21.1") { neoforge() }
         version("1.20.1") { forge() }
     }
     mod("gravestone-curios") {
+        version("26.3") { neoforge() }
+        version("26.2") { neoforge() }
         version("26.1") { neoforge() }
         version("1.21.1") { neoforge() }
         version("1.20.1") { forge() }
