@@ -58,7 +58,7 @@ public abstract class CorpseContainerMixin {
         Map<String, ICurioStacksHandler> curios = curiosHandler.getCurios();
 
         List<ItemStack> curioItems = new ArrayList<>();
-        List<java.util.function.Consumer<ItemStack>> clearActions = new ArrayList<>();
+        List<Consumer<ItemStack>> clearActions = new ArrayList<>();
 
         if (container instanceof CorpseInventoryContainer) {
             CorpseInventoryContainer corpseContainer = (CorpseInventoryContainer) container;
@@ -71,7 +71,7 @@ public abstract class CorpseContainerMixin {
 
                 ItemStack stack = slot.getItem();
                 if (!stack.isEmpty() && corpse_Curios_Compat$shouldTransferCurio(stack)) {
-                    curioItems.add(stack.copy()); // Add a copy to preserve the item
+                    curioItems.add(stack.copy());
                     final int slotIndex = i;
                     clearActions.add(s -> corpseContainer.getSlot(slotIndex).set(ItemStack.EMPTY));
                 }
@@ -80,7 +80,7 @@ public abstract class CorpseContainerMixin {
             for (int i = 0; i < corpseContainer.getCorpse().getDeath().getAdditionalItems().size(); i++) {
                 ItemStack stack = corpseContainer.getCorpse().getDeath().getAdditionalItems().get(i);
                 if (!stack.isEmpty() && corpse_Curios_Compat$shouldTransferCurio(stack)) {
-                    curioItems.add(stack.copy()); // Add a copy to preserve the item
+                    curioItems.add(stack.copy());
                     final int index = i;
                     clearActions.add(s -> corpseContainer.getCorpse().getDeath().getAdditionalItems().set(index, ItemStack.EMPTY));
                 }
@@ -94,23 +94,22 @@ public abstract class CorpseContainerMixin {
 
                 ItemStack stack = slot.getItem();
                 if (!stack.isEmpty() && corpse_Curios_Compat$shouldTransferCurio(stack)) {
-                    curioItems.add(stack.copy()); // Add a copy to preserve the item
+                    curioItems.add(stack.copy());
                     final int slotIndex = i;
                     clearActions.add(s -> additionalContainer.getSlot(slotIndex).set(ItemStack.EMPTY));
                 }
             }
         }
 
-        // Separate items into priority (slot-adding) and regular items
         List<ItemStack> priorityItems = new ArrayList<>();
         List<Consumer<ItemStack>> priorityClearActions = new ArrayList<>();
         List<ItemStack> regularItems = new ArrayList<>();
         List<Consumer<ItemStack>> regularClearActions = new ArrayList<>();
-        
+
         for (int i = 0; i < curioItems.size(); i++) {
             ItemStack stack = curioItems.get(i);
             CuriosSlotDataComponent.CurioSlotData slotData = stack.get(CuriosSlotDataComponent.CURIO_SLOT_DATA.get());
-            
+
             if (slotData != null && CuriosSlotDetector.doesItemAddSlots(stack, cachedPlayer, slotData.slotType())) {
                 priorityItems.add(stack);
                 priorityClearActions.add(clearActions.get(i));
@@ -120,8 +119,6 @@ public abstract class CorpseContainerMixin {
             }
         }
 
-        long currentTime = System.currentTimeMillis();
-        // Process priority items immediately (they're already copies)
         for (int i = 0; i < priorityItems.size(); i++) {
             ItemStack stack = priorityItems.get(i);
             if (corpse_Curios_Compat$tryTransferPreviouslyEquippedCurio(stack, curios)) {
@@ -130,12 +127,10 @@ public abstract class CorpseContainerMixin {
         }
 
         if (!regularItems.isEmpty() && !priorityItems.isEmpty()) {
-            // IMPORTANT: Remove items from corpse BEFORE transferItems runs
-            // This prevents them from going to inventory
             for (int i = 0; i < regularItems.size(); i++) {
-                ItemStack itemCopy = regularItems.get(i).copy(); // Make a copy before clearing
-                regularClearActions.get(i).accept(regularItems.get(i)); // Clear from corpse
-                regularItems.set(i, itemCopy); // Use the copy for delayed restoration
+                ItemStack itemCopy = regularItems.get(i).copy();
+                regularClearActions.get(i).accept(regularItems.get(i));
+                regularItems.set(i, itemCopy);
             }
 
             DelayedCurioHandler.scheduleCurioRestoration(cachedPlayer, regularItems);
@@ -148,21 +143,21 @@ public abstract class CorpseContainerMixin {
             }
         }
     }
-    
+
     @Unique
     private boolean corpse_Curios_Compat$shouldTransferCurio(ItemStack stack) {
         if (stack.isEmpty()) return false;
-        
+
         if (CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).isEmpty()) {
             return false;
         }
-        
+
         CuriosSlotDataComponent.CurioSlotData slotData = stack.get(CuriosSlotDataComponent.CURIO_SLOT_DATA.get());
         if (slotData == null || !slotData.wasEquipped()) {
             return false;
         }
-        
-        if (Config.isItemBlacklisted(stack.getItem())) {
+
+        if (Config.isItemBlacklisted(stack) || Config.isSlotBlacklisted(slotData.slotType())) {
             return false;
         }
 
@@ -182,11 +177,10 @@ public abstract class CorpseContainerMixin {
             return false;
         }
 
-        if (Config.isItemBlacklisted(stack.getItem())) {
+        if (Config.isItemBlacklisted(stack) || Config.isSlotBlacklisted(slotData.slotType())) {
             return false;
         }
-        
-        // Check if cursed items should be transferred
+
         if (!Config.shouldTransferCursedItems() && Config.isItemCursed(stack)) {
             return false;
         }
@@ -206,8 +200,13 @@ public abstract class CorpseContainerMixin {
                     if (!existingStack.isEmpty()) {
                         ItemStack cleanStack = stack.copy();
                         cleanStack.remove(CuriosSlotDataComponent.CURIO_SLOT_DATA.get());
-                        if (!cachedPlayer.getInventory().add(cleanStack)) {
-                            cachedPlayer.drop(cleanStack, false);
+                        ItemStack leftover = cleanStack;
+                        if (Config.shouldSwapOut(existingStack)) {
+                            targetStacks.setStackInSlot(slotIndex, cleanStack);
+                            leftover = existingStack;
+                        }
+                        if (!cachedPlayer.getInventory().add(leftover)) {
+                            cachedPlayer.drop(leftover, false);
                         }
                         return true;
                     }

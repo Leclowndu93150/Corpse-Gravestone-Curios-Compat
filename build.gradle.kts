@@ -15,13 +15,18 @@ prism {
             description = "Adds compatibility between Corpse and Curios"
             license = "MIT"
             author("Leclowndu93150")
-            version = "4.1.0"
+            version = "4.2.1"
         }
         publishing {
-            type = BETA
+            type = STABLE
             changelog = """
-                - Port to 26.2 and 26.3
-                - Fixed crash when CuriosConfig class is not found (fallback to keepInventory gamerule)
+                - Fixed the item blacklist not working on 1.21.1 and newer
+                - Item blacklist now accepts item tags (e.g. #modid:tag)
+                - Added blacklisted_slots config: curio slot types that items are never restored into
+                - Added swap_occupied_slots config: if the original slot is taken, the restored item goes back in and the current item moves to the inventory (Curse of Binding items are never swapped out)
+                - Fixed curios being lost or put in the wrong slot (cosmetic vs normal) when restored alongside slot-adding items
+                - Fixed curios that could not be re-equipped keeping leftover slot data
+                - Removed debug log spam when checking for cursed items
             """.trimIndent()
 
             curseforge {
@@ -41,36 +46,34 @@ prism {
         }
         version("26.3") {
             neoforge {
-                loaderVersion = "26.3.0.8-beta"
-                loaderVersionRange = "[4,)"
+                loaderVersion = "26.3.0.102"
                 dependencies {
-                    implementation("curse.maven:corpse-316582:9027270")
-                    implementation("curse.maven:curios-309927:9127186")
+                    implementation("curse.maven:corpse-316582:9289341")
+                    implementation("curse.maven:curios-309927:9521516")
                     implementation("curse.maven:baguettelib-1264423:9134480")
                 }
             }
         }
         version("26.2") {
             neoforge {
-                loaderVersion = "26.2.0.1-beta"
+                loaderVersion = "26.2.0.93"
                 loaderVersionRange = "[4,)"
                 dependencies {
-                    implementation("curse.maven:corpse-316582:8661336")
+                    implementation("curse.maven:corpse-316582:9289335")
                     implementation("curse.maven:curios-309927:8478313")
                     implementation("curse.maven:baguettelib-1264423:8887468")
                 }
             }
         }
         version("26.1") {
-            changelog = "- Fixed curios version range in mod metadata"
             minecraftVersions("26.1", "26.1.1", "26.1.2")
             neoforge {
                 loaderVersion = "26.1.0.1-beta"
                 loaderVersionRange = "[4,)"
                 dependencies {
-                    implementation("curse.maven:corpse-316582:7806025")
-                    implementation("curse.maven:curios-309927:7810501")
-                    implementation("curse.maven:baguettelib-1264423:7812841")
+                    implementation("curse.maven:corpse-316582:9289330")
+                    implementation("curse.maven:curios-309927:8463519")
+                    implementation("curse.maven:baguettelib-1264423:7813553")
                 }
             }
         }
@@ -79,10 +82,10 @@ prism {
                 loaderVersion = "21.1.171"
                 loaderVersionRange = "[4,)"
                 dependencies {
-                    implementation("curse.maven:corpse-316582:7018307")
+                    implementation("curse.maven:corpse-316582:9289316")
                     implementation("curse.maven:curios-309927:6529130")
-                    implementation("curse.maven:baguettelib-1264423:7880467")
-                    runtimeOnly("curse.maven:artifacts-312353:7875426")
+                    implementation("curse.maven:baguettelib-1264423:8887463")
+                    runtimeOnly("curse.maven:artifacts-312353:8791899")
                     runtimeOnly("curse.maven:cloth-config-348521:5729127")
                 }
             }
@@ -94,8 +97,8 @@ prism {
                 dependencies {
                     modImplementation("curse.maven:corpse-316582:7018272")
                     modImplementation("curse.maven:curios-309927:6418456")
-                    modImplementation("curse.maven:baguettelib-1264423:7544807")
-                    modRuntimeOnly("curse.maven:artifacts-312353:7880372")
+                    modImplementation("curse.maven:baguettelib-1264423:8887462")
+                    modRuntimeOnly("curse.maven:artifacts-312353:7903806")
                     modRuntimeOnly("curse.maven:cloth-config-348521:5729105")
                     modRuntimeOnly("curse.maven:architectury-api-419699:5137938")
                 }
@@ -110,13 +113,18 @@ prism {
             description = "Adds compatibility between Gravestone and Curios"
             license = "MIT"
             author("Leclowndu93150")
-            version = "4.1.0"
+            version = "4.2.1"
         }
         publishing {
-            type = BETA
+            type = STABLE
             changelog = """
-                - Port to 26.2 and 26.3
-                - Fixed crash when CuriosConfig class is not found (fallback to keepInventory gamerule)
+                - Fixed the item blacklist not working on 1.21.1 and newer
+                - Item blacklist now accepts item tags (e.g. #modid:tag)
+                - Added blacklisted_slots config: curio slot types that items are never restored into
+                - Added swap_occupied_slots config: if the original slot is taken, the restored item goes back in and the current item moves to the inventory (Curse of Binding items are never swapped out)
+                - Fixed curios being lost or put in the wrong slot (cosmetic vs normal) when restored alongside slot-adding items
+                - Fixed curios that could not be re-equipped keeping leftover slot data
+                - Fixed curios in slots added by another curio (via item NBT) not returning to their slot on 1.20.1
             """.trimIndent()
 
             curseforge {
@@ -136,18 +144,17 @@ prism {
         }
         version("26.3") {
             neoforge {
-                loaderVersion = "26.3.0.8-beta"
-                loaderVersionRange = "[4,)"
+                loaderVersion = "26.3.0.102"
                 dependencies {
                     implementation("curse.maven:gravestone-mod-238551:9027231")
-                    implementation("curse.maven:curios-309927:9127186")
+                    implementation("curse.maven:curios-309927:9521516")
                     implementation("curse.maven:baguettelib-1264423:9134480")
                 }
             }
         }
         version("26.2") {
             neoforge {
-                loaderVersion = "26.2.0.1-beta"
+                loaderVersion = "26.2.0.93"
                 loaderVersionRange = "[4,)"
                 dependencies {
                     implementation("curse.maven:gravestone-mod-238551:8671632")
@@ -157,15 +164,14 @@ prism {
             }
         }
         version("26.1") {
-            changelog = "- Fixed curios version range in mod metadata"
             minecraftVersions("26.1", "26.1.1", "26.1.2")
             neoforge {
                 loaderVersion = "26.1.0.1-beta"
                 loaderVersionRange = "[4,)"
                 dependencies {
-                    implementation("curse.maven:gravestone-mod-238551:7806149")
-                    implementation("curse.maven:curios-309927:7810501")
-                    implementation("curse.maven:baguettelib-1264423:7812841")
+                    implementation("curse.maven:gravestone-mod-238551:8671629")
+                    implementation("curse.maven:curios-309927:8463519")
+                    implementation("curse.maven:baguettelib-1264423:7813553")
                 }
             }
         }
@@ -174,24 +180,23 @@ prism {
                 loaderVersion = "21.1.171"
                 loaderVersionRange = "[4,)"
                 dependencies {
-                    implementation("curse.maven:gravestone-mod-238551:7099728")
+                    implementation("curse.maven:gravestone-mod-238551:8671622")
                     implementation("curse.maven:curios-309927:6529130")
-                    implementation("curse.maven:baguettelib-1264423:7880467")
-                    runtimeOnly("curse.maven:artifacts-312353:7875426")
+                    implementation("curse.maven:baguettelib-1264423:8887463")
+                    runtimeOnly("curse.maven:artifacts-312353:8791899")
                     runtimeOnly("curse.maven:cloth-config-348521:5729127")
                 }
             }
         }
         version("1.20.1") {
-            changelog = "- Fixed missing refmap entry in mixin config"
             forge {
                 loaderVersion = "47.4.0"
                 loaderVersionRange = "[47,)"
                 dependencies {
                     modImplementation("curse.maven:gravestone-mod-238551:7099725")
                     modImplementation("curse.maven:curios-309927:6418456")
-                    modImplementation("curse.maven:baguettelib-1264423:7544807")
-                    modRuntimeOnly("curse.maven:artifacts-312353:7880372")
+                    modImplementation("curse.maven:baguettelib-1264423:8887462")
+                    modRuntimeOnly("curse.maven:artifacts-312353:7903806")
                     modRuntimeOnly("curse.maven:cloth-config-348521:5729105")
                     modRuntimeOnly("curse.maven:architectury-api-419699:5137938")
                 }
@@ -209,7 +214,7 @@ prism {
             version = "1.0.0"
         }
         publishing {
-            type = BETA
+            type = STABLE
             changelog = """
                 Initial release
             """.trimIndent()
@@ -234,10 +239,10 @@ prism {
                 loaderVersion = "21.1.171"
                 loaderVersionRange = "[4,)"
                 dependencies {
-                    implementation("curse.maven:corpse-316582:7018307")
-                    implementation("curse.maven:gravestone-mod-238551:7099728")
-                    implementation("curse.maven:accessories-938917:7583320")
-                    implementation("curse.maven:baguettelib-1264423:7880467")
+                    implementation("curse.maven:corpse-316582:9289316")
+                    implementation("curse.maven:gravestone-mod-238551:8671622")
+                    implementation("curse.maven:accessories-938917:9216447")
+                    implementation("curse.maven:baguettelib-1264423:8887463")
                     runtimeOnly("curse.maven:aether-255308:7043502")
                 }
             }
@@ -251,7 +256,7 @@ prism {
                     modImplementation("curse.maven:corpse-316582:7018272")
                     modImplementation("curse.maven:gravestone-mod-238551:7099725")
                     modImplementation("curse.maven:accessories-938917:7164863")
-                    modImplementation("curse.maven:baguettelib-1264423:7544807")
+                    modImplementation("curse.maven:baguettelib-1264423:8887462")
                 }
             }
         }
@@ -267,7 +272,7 @@ prism {
             version = "4.0.1"
         }
         publishing {
-            type = BETA
+            type = STABLE
             changelog = """
                 
                  Fixes crash due to obfuscation issues, i'm sorry to all people who were affected
@@ -294,7 +299,7 @@ prism {
                 loaderVersion = "21.1.171"
                 loaderVersionRange = "[4,)"
                 dependencies {
-                    implementation("curse.maven:corpse-316582:7018307")
+                    implementation("curse.maven:corpse-316582:9289316")
                     implementation("curse.maven:cosmetic-armor-reworked-237307:5610814")
                 }
             }

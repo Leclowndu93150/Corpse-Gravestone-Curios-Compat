@@ -50,7 +50,7 @@ public abstract class GraveStoneBlockMixin {
                     CuriosSlotDataComponent.CurioSlotData slotData = CuriosSlotDataComponent.getCurioSlotData(stack);
                     if (slotData == null || !slotData.wasEquipped()) continue;
                     if (CuriosApi.getCuriosHelper().getCurioTags(stack.getItem()).isEmpty()) continue;
-                    if (Config.isItemBlacklisted(stack.getItem())) continue;
+                    if (Config.isItemBlacklisted(stack) || Config.isSlotBlacklisted(slotData.slotType())) continue;
                     if (!Config.shouldTransferCursedItems() && Config.isItemCursed(stack)) continue;
 
                     ItemStack copy = stack.copy();
@@ -111,8 +111,13 @@ public abstract class GraveStoneBlockMixin {
                     targetStacks.setStackInSlot(slotData.slotIndex(), clean);
                     return true;
                 } else {
-                    if (!player.getInventory().add(clean)) {
-                        player.drop(clean, false);
+                    ItemStack leftover = clean;
+                    if (Config.shouldSwapOut(existing)) {
+                        targetStacks.setStackInSlot(slotData.slotIndex(), clean);
+                        leftover = existing;
+                    }
+                    if (!player.getInventory().add(leftover)) {
+                        player.drop(leftover, false);
                     }
                     return true;
                 }

@@ -148,7 +148,7 @@ public abstract class CorpseContainerMixin {
         CuriosSlotDataComponent.CurioSlotData slotData = CuriosSlotDataComponent.getCurioSlotData(stack);
         if (slotData == null || !slotData.wasEquipped()) return false;
 
-        if (Config.isItemBlacklisted(stack.getItem())) return false;
+        if (Config.isItemBlacklisted(stack) || Config.isSlotBlacklisted(slotData.slotType())) return false;
 
         return Config.shouldTransferCursedItems() || !Config.isItemCursed(stack);
     }
@@ -162,7 +162,7 @@ public abstract class CorpseContainerMixin {
         CuriosSlotDataComponent.CurioSlotData slotData = CuriosSlotDataComponent.getCurioSlotData(stack);
         if (slotData == null || !slotData.wasEquipped()) return false;
 
-        if (Config.isItemBlacklisted(stack.getItem())) return false;
+        if (Config.isItemBlacklisted(stack) || Config.isSlotBlacklisted(slotData.slotType())) return false;
 
         if (!Config.shouldTransferCursedItems() && Config.isItemCursed(stack)) return false;
 
@@ -181,8 +181,13 @@ public abstract class CorpseContainerMixin {
                     if (!existingStack.isEmpty()) {
                         ItemStack cleanStack = stack.copy();
                         CuriosSlotDataComponent.removeCurioSlotData(cleanStack);
-                        if (!cachedPlayer.getInventory().add(cleanStack)) {
-                            cachedPlayer.drop(cleanStack, false);
+                        ItemStack leftover = cleanStack;
+                        if (Config.shouldSwapOut(existingStack)) {
+                            targetStacks.setStackInSlot(slotIndex, cleanStack);
+                            leftover = existingStack;
+                        }
+                        if (!cachedPlayer.getInventory().add(leftover)) {
+                            cachedPlayer.drop(leftover, false);
                         }
                         return true;
                     }

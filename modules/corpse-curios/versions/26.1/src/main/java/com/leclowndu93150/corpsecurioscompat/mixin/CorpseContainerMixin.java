@@ -143,7 +143,7 @@ public abstract class CorpseContainerMixin {
         if (CuriosSlotTypes.getItemSlotTypes(stack, cachedPlayer).isEmpty()) return false;
         CurioSlotData slotData = BaguetteCuriosData.getSlotData(stack);
         if (slotData == null || !slotData.wasEquipped()) return false;
-        if (Config.isItemBlacklisted(stack.getItem())) return false;
+        if (Config.isItemBlacklisted(stack) || Config.isSlotBlacklisted(slotData.slotType())) return false;
         return Config.shouldTransferCursedItems() || !Config.isItemCursed(stack);
     }
 
@@ -153,7 +153,7 @@ public abstract class CorpseContainerMixin {
         if (CuriosSlotTypes.getItemSlotTypes(stack, cachedPlayer).isEmpty()) return false;
         CurioSlotData slotData = BaguetteCuriosData.getSlotData(stack);
         if (slotData == null || !slotData.wasEquipped()) return false;
-        if (Config.isItemBlacklisted(stack.getItem())) return false;
+        if (Config.isItemBlacklisted(stack) || Config.isSlotBlacklisted(slotData.slotType())) return false;
         if (!Config.shouldTransferCursedItems() && Config.isItemCursed(stack)) return false;
 
         String slotType = slotData.slotType();
@@ -169,8 +169,13 @@ public abstract class CorpseContainerMixin {
                     if (!existingStack.isEmpty()) {
                         ItemStack cleanStack = stack.copy();
                         BaguetteCuriosData.removeSlotData(cleanStack);
-                        if (!cachedPlayer.getInventory().add(cleanStack)) {
-                            cachedPlayer.drop(cleanStack, false);
+                        ItemStack leftover = cleanStack;
+                        if (Config.shouldSwapOut(existingStack)) {
+                            targetStacks.setStackInSlot(slotIndex, cleanStack);
+                            leftover = existingStack;
+                        }
+                        if (!cachedPlayer.getInventory().add(leftover)) {
+                            cachedPlayer.drop(leftover, false);
                         }
                         return true;
                     }

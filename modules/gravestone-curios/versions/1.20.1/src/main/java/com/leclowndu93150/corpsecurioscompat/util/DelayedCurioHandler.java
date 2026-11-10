@@ -1,5 +1,6 @@
 package com.leclowndu93150.corpsecurioscompat.util;
 
+import com.leclowndu93150.corpsecurioscompat.Config;
 import com.leclowndu93150.corpsecurioscompat.data.CuriosSlotDataComponent;
 import com.leclowndu93150.corpsecurioscompat.duck.ICuriosAccessor;
 import net.minecraft.world.entity.player.Player;
@@ -43,9 +44,9 @@ public class DelayedCurioHandler {
 
             for (ItemStack stack : items) {
                 if (!tryEquipCurio(stack, player, curios)) {
-                    if (!player.getInventory().add(stack)) {
-                        player.drop(stack, false);
-                    }
+                    ItemStack cleanStack = stack.copy();
+                    CuriosSlotDataComponent.removeCurioSlotData(cleanStack);
+                    giveOrDrop(player, cleanStack);
                 }
             }
         });
@@ -53,25 +54,31 @@ public class DelayedCurioHandler {
 
     private static boolean tryEquipCurio(ItemStack stack, Player player, Map<String, ICurioStacksHandler> curios) {
         if (stack.isEmpty()) return false;
-
         CuriosSlotDataComponent.CurioSlotData slotData = CuriosSlotDataComponent.getCurioSlotData(stack);
         if (slotData == null) return false;
 
-        String slotType = slotData.slotType();
-        int slotIndex = slotData.slotIndex();
-        ICurioStacksHandler handler = curios.get(slotType);
-        if (handler != null && slotIndex >= 0) {
-            var targetStacks = slotData.isCosmetic() ? handler.getCosmeticStacks() : handler.getStacks();
-            if (slotIndex < targetStacks.getSlots()) {
-                if (targetStacks.getStackInSlot(slotIndex).isEmpty()) {
-                    ItemStack cleanStack = stack.copy();
-                    CuriosSlotDataComponent.removeCurioSlotData(cleanStack);
-                    targetStacks.setStackInSlot(slotIndex, cleanStack);
-                    return true;
-                }
-            }
+        ICurioStacksHandler handler = curios.get(slotData.slotType());
+        if (handler == null || slotData.slotIndex() < 0) return false;
+
+        var targetStacks = slotData.isCosmetic() ? handler.getCosmeticStacks() : handler.getStacks();
+        if (slotData.slotIndex() >= targetStacks.getSlots()) return false;
+
+        ItemStack existing = targetStacks.getStackInSlot(slotData.slotIndex());
+        if (!existing.isEmpty() && !Config.shouldSwapOut(existing)) return false;
+
+        ItemStack cleanStack = stack.copy();
+        CuriosSlotDataComponent.removeCurioSlotData(cleanStack);
+        targetStacks.setStackInSlot(slotData.slotIndex(), cleanStack);
+        if (!existing.isEmpty()) {
+            giveOrDrop(player, existing);
         }
-        return false;
+        return true;
+    }
+
+    private static void giveOrDrop(Player player, ItemStack stack) {
+        if (!player.getInventory().add(stack)) {
+            player.drop(stack, false);
+        }
     }
 
     public static void cleanupPlayer(Player player) {
@@ -82,9 +89,7 @@ public class DelayedCurioHandler {
                 if (!stack.isEmpty()) {
                     ItemStack cleanStack = stack.copy();
                     CuriosSlotDataComponent.removeCurioSlotData(cleanStack);
-                    if (!player.getInventory().add(cleanStack)) {
-                        player.drop(cleanStack, false);
-                    }
+                    giveOrDrop(player, cleanStack);
                 }
             }
         }

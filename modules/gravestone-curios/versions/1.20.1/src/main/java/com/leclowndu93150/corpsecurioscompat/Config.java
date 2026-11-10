@@ -1,6 +1,9 @@
 package com.leclowndu93150.corpsecurioscompat;
 
-import net.minecraft.world.item.Item;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.item.enchantment.Enchantments;
@@ -14,18 +17,28 @@ public class Config {
     public static final ForgeConfigSpec COMMON;
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> BLACKLISTED_ITEMS;
     public static final ForgeConfigSpec.BooleanValue TRANSFER_CURSED_ITEMS;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> BLACKLISTED_SLOTS;
+    public static final ForgeConfigSpec.BooleanValue SWAP_OCCUPIED_SLOTS;
 
     static {
         ForgeConfigSpec.Builder COMMON_BUILDER = new ForgeConfigSpec.Builder();
         COMMON_BUILDER.comment("General settings").push("general");
 
         BLACKLISTED_ITEMS = COMMON_BUILDER
-                .comment("Items that should not be transferred to curios slots (format: 'modid:item')")
+                .comment("Items that should not be transferred to curios slots (format: 'modid:item' or '#modid:tag')")
                 .defineList("blacklisted_items", List.of(), entry -> entry instanceof String);
 
         TRANSFER_CURSED_ITEMS = COMMON_BUILDER
                 .comment("Whether cursed items (Curse of Binding) should be transferred back to curios slots")
                 .define("transfer_cursed_items", false);
+
+        BLACKLISTED_SLOTS = COMMON_BUILDER
+                .comment("Curio slot types that items should never be restored into (e.g. 'ring', 'back')")
+                .defineList("blacklisted_slots", List.of(), entry -> entry instanceof String);
+
+        SWAP_OCCUPIED_SLOTS = COMMON_BUILDER
+                .comment("If the original curio slot is already occupied, put the restored item back into it and move the current item to the inventory (items with Curse of Binding are never swapped out)")
+                .define("swap_occupied_slots", false);
 
         COMMON_BUILDER.pop();
         COMMON = COMMON_BUILDER.build();
@@ -35,12 +48,29 @@ public class Config {
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, COMMON);
     }
 
-    public static boolean isItemBlacklisted(Item item) {
-        return BLACKLISTED_ITEMS.get().contains(item.builtInRegistryHolder().key().location().toString());
+    public static boolean isItemBlacklisted(ItemStack stack) {
+        String itemId = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
+        for (String entry : BLACKLISTED_ITEMS.get()) {
+            if (entry.startsWith("#")) {
+                ResourceLocation tagId = ResourceLocation.tryParse(entry.substring(1));
+                if (tagId != null && stack.is(TagKey.create(Registries.ITEM, tagId))) return true;
+            } else if (entry.equals(itemId)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean isSlotBlacklisted(String slotType) {
+        return BLACKLISTED_SLOTS.get().contains(slotType);
     }
 
     public static boolean shouldTransferCursedItems() {
         return TRANSFER_CURSED_ITEMS.get();
+    }
+
+    public static boolean shouldSwapOut(ItemStack equipped) {
+        return SWAP_OCCUPIED_SLOTS.get() && !isItemCursed(equipped);
     }
 
     public static boolean isItemCursed(ItemStack stack) {

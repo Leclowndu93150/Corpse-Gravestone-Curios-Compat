@@ -24,18 +24,20 @@ public class CuriosSlotDetector {
 
         ICurio curio = curiosOpt.resolve().get();
         SlotContext slotContext = new SlotContext(slotType, player, 0, false, true);
-        Multimap<Attribute, AttributeModifier> modifiers = curio.getAttributeModifiers(slotContext, TEMP_UUID);
 
+        if (addsSlots(curio.getAttributeModifiers(slotContext, TEMP_UUID))) return true;
+        return addsSlots(CuriosApi.getAttributeModifiers(slotContext, TEMP_UUID, stack));
+    }
+
+    private static boolean addsSlots(Multimap<Attribute, AttributeModifier> modifiers) {
         for (var entry : modifiers.entries()) {
-            Attribute attr = entry.getKey();
-            AttributeModifier modifier = entry.getValue();
-            if (attr instanceof SlotAttribute) {
+            if (entry.getKey() instanceof SlotAttribute) {
+                AttributeModifier modifier = entry.getValue();
                 if (modifier.getAmount() > 0 && modifier.getOperation() == AttributeModifier.Operation.ADDITION) {
                     return true;
                 }
             }
         }
-
         return false;
     }
 }

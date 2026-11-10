@@ -3,6 +3,7 @@ package com.leclowndu93150.corpsecurioscompat.util;
 import com.leclowndu93150.baguettelib.curios.BaguetteCuriosData;
 import com.leclowndu93150.baguettelib.curios.CurioSlotData;
 import com.leclowndu93150.baguettelib.curios.CuriosUtils;
+import com.leclowndu93150.corpsecurioscompat.Config;
 import com.leclowndu93150.corpsecurioscompat.duck.ICuriosAccessor;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -34,36 +35,51 @@ public class DelayedCurioHandler {
         if (items == null || items.isEmpty()) return;
 
         CuriosUtils.getCuriosInventory(player).ifPresent(handler -> {
-            for (ICurioStacksHandler stacksHandler : handler.getCurios().values()) {
+            Map<String, ICurioStacksHandler> curios = handler.getCurios();
+
+            for (ICurioStacksHandler stacksHandler : curios.values()) {
                 if (stacksHandler instanceof ICuriosAccessor accessor) {
                     accessor.corpsecurioscompat$forceSlotRebuild();
                 }
             }
 
             for (ItemStack stack : items) {
-                if (!tryEquipCurio(stack, player)) {
-                    if (!player.getInventory().add(stack)) {
-                        player.drop(stack, false);
-                    }
+                if (!tryEquipCurio(stack, player, curios)) {
+                    ItemStack cleanStack = stack.copy();
+                    BaguetteCuriosData.removeSlotData(cleanStack);
+                    giveOrDrop(player, cleanStack);
                 }
             }
         });
     }
 
-    private static boolean tryEquipCurio(ItemStack stack, Player player) {
+    private static boolean tryEquipCurio(ItemStack stack, Player player, Map<String, ICurioStacksHandler> curios) {
         if (stack.isEmpty()) return false;
         CurioSlotData slotData = BaguetteCuriosData.getSlotData(stack);
         if (slotData == null) return false;
 
-        Optional<ItemStack> existing = CuriosUtils.getCurio(player, slotData.slotType(), slotData.slotIndex())
-                .map(result -> result.stack());
+        ICurioStacksHandler handler = curios.get(slotData.slotType());
+        if (handler == null || slotData.slotIndex() < 0) return false;
 
-        if (existing.isPresent() && !existing.get().isEmpty()) return false;
+        var targetStacks = slotData.isCosmetic() ? handler.getCosmeticStacks() : handler.getStacks();
+        if (slotData.slotIndex() >= targetStacks.getSlots()) return false;
+
+        ItemStack existing = targetStacks.getStackInSlot(slotData.slotIndex());
+        if (!existing.isEmpty() && !Config.shouldSwapOut(existing)) return false;
 
         ItemStack cleanStack = stack.copy();
         BaguetteCuriosData.removeSlotData(cleanStack);
-        CuriosUtils.setCurio(player, slotData.slotType(), slotData.slotIndex(), cleanStack);
+        targetStacks.setStackInSlot(slotData.slotIndex(), cleanStack);
+        if (!existing.isEmpty()) {
+            giveOrDrop(player, existing);
+        }
         return true;
+    }
+
+    private static void giveOrDrop(Player player, ItemStack stack) {
+        if (!player.getInventory().add(stack)) {
+            player.drop(stack, false);
+        }
     }
 
     public static void cleanupPlayer(Player player) {
@@ -74,9 +90,7 @@ public class DelayedCurioHandler {
                 if (!stack.isEmpty()) {
                     ItemStack cleanStack = stack.copy();
                     BaguetteCuriosData.removeSlotData(cleanStack);
-                    if (!player.getInventory().add(cleanStack)) {
-                        player.drop(cleanStack, false);
-                    }
+                    giveOrDrop(player, cleanStack);
                 }
             }
         }

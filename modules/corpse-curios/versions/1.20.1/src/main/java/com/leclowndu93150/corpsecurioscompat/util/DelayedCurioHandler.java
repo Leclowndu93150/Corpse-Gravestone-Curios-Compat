@@ -1,5 +1,6 @@
 package com.leclowndu93150.corpsecurioscompat.util;
 
+import com.leclowndu93150.corpsecurioscompat.Config;
 import com.leclowndu93150.corpsecurioscompat.data.CuriosSlotDataComponent;
 import com.leclowndu93150.corpsecurioscompat.duck.ICuriosAccessor;
 import net.minecraft.world.entity.player.Player;
@@ -12,50 +13,29 @@ import java.util.*;
 public class DelayedCurioHandler {
     private static final Map<UUID, List<ItemStack>> pendingItems = new HashMap<>();
     private static final Map<UUID, Long> scheduledTimes = new HashMap<>();
-    
-    /**
-     * Stores items to be processed after a delay for a specific player
-     */
+
     public static void scheduleCurioRestoration(Player player, List<ItemStack> items) {
         if (items.isEmpty()) return;
-        
-        UUID playerId = player.getUUID();
-        pendingItems.put(playerId, new ArrayList<>(items));
-        
-        long currentTime = System.currentTimeMillis();
-        long executeTime = currentTime + 50; // 1 tick (50 ms) delay
-        scheduledTimes.put(playerId, executeTime);
+        pendingItems.put(player.getUUID(), new ArrayList<>(items));
+        scheduledTimes.put(player.getUUID(), System.currentTimeMillis() + 50);
     }
-    
-    /**
-     * Tick handler for a specific player
-     */
+
     public static void tickForPlayer(Player player) {
-        UUID playerId = player.getUUID();
-        Long scheduledTime = scheduledTimes.get(playerId);
-        
+        Long scheduledTime = scheduledTimes.get(player.getUUID());
         if (scheduledTime == null) return;
-        
-        long currentTime = System.currentTimeMillis();
-        
-        if (currentTime >= scheduledTime) {
+        if (System.currentTimeMillis() >= scheduledTime) {
             processPendingItems(player);
-            scheduledTimes.remove(playerId);
+            scheduledTimes.remove(player.getUUID());
         }
     }
-    
-    /**
-     * Processes pending items for a player
-     */
+
     private static void processPendingItems(Player player) {
-        UUID playerId = player.getUUID();
-        List<ItemStack> items = pendingItems.remove(playerId);
-        
+        List<ItemStack> items = pendingItems.remove(player.getUUID());
         if (items == null || items.isEmpty()) return;
-        
+
         var curiosOptional = CuriosApi.getCuriosHelper().getCuriosHandler(player);
         if (!curiosOptional.isPresent()) return;
-        
+
         var handler = curiosOptional.resolve().get();
         Map<String, ICurioStacksHandler> curios = handler.getCurios();
 
@@ -64,64 +44,54 @@ public class DelayedCurioHandler {
                 accessor.corpsecurioscompat$forceSlotRebuild();
             }
         }
-        
+
         for (ItemStack stack : items) {
             if (!tryEquipCurio(stack, player, curios)) {
-                if (!player.getInventory().add(stack)) {
-                    player.drop(stack, false);
-                }
+                ItemStack cleanStack = stack.copy();
+                CuriosSlotDataComponent.removeCurioSlotData(cleanStack);
+                giveOrDrop(player, cleanStack);
             }
         }
     }
-    
-    /**
-     * Tries to equip a curio item
-     */
+
     private static boolean tryEquipCurio(ItemStack stack, Player player, Map<String, ICurioStacksHandler> curios) {
         if (stack.isEmpty()) return false;
-        
         CuriosSlotDataComponent.CurioSlotData slotData = CuriosSlotDataComponent.getCurioSlotData(stack);
         if (slotData == null) return false;
-        
-        String slotType = slotData.slotType();
-        int slotIndex = slotData.slotIndex();
-        ICurioStacksHandler handler = curios.get(slotType);
-        if (handler != null && slotIndex >= 0) {
-            var targetStacks = slotData.isCosmetic() ? handler.getCosmeticStacks() : handler.getStacks();
-            int availableSlots = targetStacks.getSlots();
 
-            if (slotIndex < availableSlots) {
-                ItemStack existingStack = targetStacks.getStackInSlot(slotIndex);
-                
-                if (existingStack.isEmpty()) {
-                    ItemStack cleanStack = stack.copy();
-                    CuriosSlotDataComponent.removeCurioSlotData(cleanStack);
-                    targetStacks.setStackInSlot(slotIndex, cleanStack);
-                    return true;
-                }
-            }
+        ICurioStacksHandler handler = curios.get(slotData.slotType());
+        if (handler == null || slotData.slotIndex() < 0) return false;
+
+        var targetStacks = slotData.isCosmetic() ? handler.getCosmeticStacks() : handler.getStacks();
+        if (slotData.slotIndex() >= targetStacks.getSlots()) return false;
+
+        ItemStack existing = targetStacks.getStackInSlot(slotData.slotIndex());
+        if (!existing.isEmpty() && !Config.shouldSwapOut(existing)) return false;
+
+        ItemStack cleanStack = stack.copy();
+        CuriosSlotDataComponent.removeCurioSlotData(cleanStack);
+        targetStacks.setStackInSlot(slotData.slotIndex(), cleanStack);
+        if (!existing.isEmpty()) {
+            giveOrDrop(player, existing);
         }
-
-        return false;
+        return true;
     }
 
-    /**
-     * Cleanup pending items for a player (e.g., on logout)
-     */
-    public static void cleanupPlayer(Player player) {
-        UUID playerId = player.getUUID();
-        List<ItemStack> items = pendingItems.remove(playerId);
-        scheduledTimes.remove(playerId);
+    private static void giveOrDrop(Player player, ItemStack stack) {
+        if (!player.getInventory().add(stack)) {
+            player.drop(stack, false);
+        }
+    }
 
-        if (items != null && !items.isEmpty()) {
+    public static void cleanupPlayer(Player player) {
+        List<ItemStack> items = pendingItems.remove(player.getUUID());
+        scheduledTimes.remove(player.getUUID());
+        if (items != null) {
             for (ItemStack stack : items) {
                 if (!stack.isEmpty()) {
                     ItemStack cleanStack = stack.copy();
                     CuriosSlotDataComponent.removeCurioSlotData(cleanStack);
-
-                    if (!player.getInventory().add(cleanStack)) {
-                        player.drop(cleanStack, false);
-                    }
+                    giveOrDrop(player, cleanStack);
                 }
             }
         }
